@@ -1,0 +1,9 @@
+# Node modules
+node_modules/
+
+# Environments
+.env
+
+dist/
+
+postgres/
