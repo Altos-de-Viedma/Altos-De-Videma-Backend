@@ -5,8 +5,8 @@ import { Repository } from 'typeorm';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import { UpdateVisitorDto } from './dto/update-visitor.dto';
 import { Visitor } from './entities/visitor.entity';
-import { Property } from 'src/property/entities/property.entity';
-import { User } from 'src/auth/entities/user.entity';
+import { Property } from '../property/entities/property.entity';
+import { User } from '../auth/entities/user.entity';
 
 type ErrorType = 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_SERVER_ERROR' | 'FORBIDDEN';
 

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsUUID } from 'class-validator';
 
-import { User } from 'src/auth/entities/user.entity';
+import { User } from '../../auth/entities/user.entity';
 
 
 export class CreatePropertyDto {

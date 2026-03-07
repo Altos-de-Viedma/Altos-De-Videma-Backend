@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 
-import { Auth } from 'src/auth/decorators';
+import { Auth } from '../auth/decorators';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { PropertyService } from './property.service';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { ValidRoles } from 'src/auth/interfaces';
+import { ValidRoles } from '../auth/interfaces';
 
 
 @Controller( 'property' )

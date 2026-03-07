@@ -1,9 +1,9 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
-import { Property } from 'src/property/entities/property.entity';
-import { Notification } from 'src/notification/entities/notification.entity';
-import { Emergency } from 'src/emergency/entities/emergency.entity';
-import { Package } from 'src/package/entities/package.entity';
+import { Property } from '../../property/entities/property.entity';
+import { Notification } from '../../notification/entities/notification.entity';
+import { Emergency } from '../../emergency/entities/emergency.entity';
+import { Package } from '../../package/entities/package.entity';
 
 
 @Entity( 'users' )

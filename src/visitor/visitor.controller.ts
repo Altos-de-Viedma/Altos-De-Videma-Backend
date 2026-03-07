@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 
-import { Auth, GetUser } from 'src/auth/decorators';
+import { Auth, GetUser } from '../auth/decorators';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import { UpdateVisitorDto } from './dto/update-visitor.dto';
 import { VisitorService } from './visitor.service';
-import { User } from 'src/auth/entities/user.entity';
+import { User } from '../auth/entities/user.entity';
 
 @Controller( 'visitor' )
 export class VisitorController {

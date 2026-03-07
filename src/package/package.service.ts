@@ -5,8 +5,8 @@ import { Repository } from 'typeorm';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
 import { Package } from './entities/package.entity';
-import { User } from 'src/auth/entities/user.entity';
-import { Property } from 'src/property/entities/property.entity';
+import { User } from '../auth/entities/user.entity';
+import { Property } from '../property/entities/property.entity';
 
 @Injectable()
 export class PackageService {

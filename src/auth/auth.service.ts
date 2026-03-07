@@ -101,6 +101,10 @@ export class AuthService {
   }
 
   async update( id: string, updateUserDto: UpdateUserDto ) {
+    if ( updateUserDto.password ) {
+      updateUserDto.password = bcrypt.hashSync( updateUserDto.password, 10 );
+    }
+
     const user = await this.userRepository.preload( {
       id: id,
       ...updateUserDto
@@ -110,6 +114,7 @@ export class AuthService {
 
     try {
       await this.userRepository.save( user );
+      delete user.password;
       return user;
     } catch ( error ) {
       this.handleDBErrors( error );

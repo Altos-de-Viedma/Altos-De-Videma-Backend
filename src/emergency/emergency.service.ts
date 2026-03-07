@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 
 import { CreateEmergencyDto } from './dto/create-emergency.dto';
 import { UpdateEmergencyDto } from './dto/update-emergency.dto';
-import { User } from 'src/auth/entities/user.entity';
+import { User } from '../auth/entities/user.entity';
 import { Emergency } from './entities/emergency.entity';
 
 type ErrorType = 'NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'UNAUTHORIZED';

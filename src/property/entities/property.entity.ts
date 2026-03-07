@@ -1,8 +1,8 @@
 import { BeforeInsert, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
-import { User } from 'src/auth/entities/user.entity';
-import { Visitor } from 'src/visitor/entities/visitor.entity';
-import { Package } from 'src/package/entities/package.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Visitor } from '../../visitor/entities/visitor.entity';
+import { Package } from '../../package/entities/package.entity';
 
 @Entity()
 export class Property {

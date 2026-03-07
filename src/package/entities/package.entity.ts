@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
-import { User } from 'src/auth/entities/user.entity';
-import { Property } from 'src/property/entities/property.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Property } from '../../property/entities/property.entity';
 
 @Entity()
 export class Package {
