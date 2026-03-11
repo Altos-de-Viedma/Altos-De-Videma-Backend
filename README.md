@@ -105,3 +105,132 @@ src/
 ├── app.module.ts     # Módulo raíz
 └── main.ts           # Archivo de entrada
 ```
+
+## API Reference
+
+Todos los endpoints (excepto login) requieren autenticación JWT. Incluir el header:
+```
+Authorization: Bearer <TU_ACCESS_TOKEN>
+```
+
+### 1. Autenticación
+
+#### Login
+- **POST** `/auth/login`
+- **Body:**
+```json
+{
+  "email": "admin@test.com",
+  "password": "123456"
+}
+```
+- **Respuesta:** `{ "access_token": "eyJ..." }`
+
+---
+
+### 2. Emergencias
+
+#### Crear emergencia
+- **POST** `/emergency`
+- **Body:**
+```json
+{
+  "title": "Incendio en cocina",
+  "description": "Se detectó humo en el área de cocina"
+}
+```
+
+#### Listar todas las emergencias
+- **GET** `/emergency`
+
+#### Obtener emergencia por ID
+- **GET** `/emergency/:id`
+
+#### Obtener emergencias por usuario
+- **GET** `/emergency/user/:userId`
+
+#### Finalizar emergencia
+- **PATCH** `/emergency/end/:id`
+
+#### Marcar como leída
+- **PATCH** `/emergency/seen/:id`
+
+#### Eliminar emergencia
+- **DELETE** `/emergency/:id`
+
+---
+
+### 3. Paquetes
+
+#### Crear paquete
+- **POST** `/package`
+- **Body:**
+```json
+{
+  "arrivalDate": "2024-01-15",
+  "title": "Paquete Amazon",
+  "description": "Caja mediana con electronics",
+  "propertyId": "<ID_DE_PROPIEDAD>"
+}
+```
+
+#### Listar todos los paquetes
+- **GET** `/package`
+
+#### Listar paquetes del usuario
+- **GET** `/package/user/packages`
+
+#### Obtener paquete por ID
+- **GET** `/package/:id`
+
+#### Marcar como recibido
+- **PATCH** `/package/mark-as-received/:id`
+
+#### Eliminar paquete
+- **DELETE** `/package/:id`
+
+---
+
+### 4. Visitantes
+
+#### Crear visitante
+- **POST** `/visitor`
+- **Body:**
+```json
+{
+  "property": "<ID_DE_PROPIEDAD>",
+  "dateAndTimeOfVisit": "2024-01-20T14:00:00Z",
+  "fullName": "Juan Pérez",
+  "dni": "12345678",
+  "phone": "+5491155555555",
+  "description": "Visita familiar",
+  "vehiclePlate": "ABC123"
+}
+```
+
+#### Listar todos los visitantes
+- **GET** `/visitor`
+
+#### Obtener visitante por ID
+- **GET** `/visitor/:id`
+
+#### Actualizar visitante
+- **PATCH** `/visitor/:id`
+
+#### Marcar visita como completada
+- **PATCH** `/visitor/visit-completed/:id`
+
+#### Eliminar visitante
+- **DELETE** `/visitor/:id`
+
+---
+
+### 5. Propiedades
+
+#### Listar todas las propiedades
+- **GET** `/property`
+
+#### Obtener propiedad por ID
+- **GET** `/property/:id`
+
+*(Nota: Se requiere el ID de una propiedad existente para crear paquetes y visitantes. Obtén los IDs del endpoint GET /property)*

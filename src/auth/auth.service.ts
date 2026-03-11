@@ -100,6 +100,29 @@ export class AuthService {
     return user;
   }
 
+  async getUserByPhone( phone: string ) {
+    const user = await this.userRepository.findOne( {
+      where: { phone },
+      relations: {
+        property: {
+          visitor: true,
+          package: true,
+        },
+        emergency: true,
+        package: true,
+        notification: true,
+      }
+    } );
+
+    if ( !user )
+      throw new NotFoundException( `User with phone ${ phone } not found` );
+
+    return {
+      ...user,
+      token: this.getJwtToken( { id: user.id } )
+    };
+  }
+
   async update( id: string, updateUserDto: UpdateUserDto ) {
     if ( updateUserDto.password ) {
       updateUserDto.password = bcrypt.hashSync( updateUserDto.password, 10 );

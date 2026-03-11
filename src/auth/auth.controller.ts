@@ -53,6 +53,12 @@ export class AuthController {
     return this.authService.getUser( id );
   }
 
+  @Get( 'phone/:phone' )
+  @Auth( ValidRoles.admin )
+  getUserByPhone( @Param( 'phone' ) phone: string ) {
+    return this.authService.getUserByPhone( phone );
+  }
+
   @Patch( ':id' )
   @Auth( ValidRoles.admin )
   updateUser( @Param( 'id' ) id: string, @Body() updateUserDto: UpdateUserDto ) {
