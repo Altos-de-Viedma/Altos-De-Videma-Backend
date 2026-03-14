@@ -13,6 +13,9 @@ export class Property {
   @Column( 'boolean', { default: true } )
   status: boolean;
 
+  @Column( 'boolean', { default: false } )
+  isMain: boolean;
+
   @Column( 'timestamp', { nullable: false } )
   date: Date;
 

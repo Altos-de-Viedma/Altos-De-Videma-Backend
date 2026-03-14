@@ -117,8 +117,24 @@ export class AuthService {
     if ( !user )
       throw new NotFoundException( `User with phone ${ phone } not found` );
 
+    const emergencies = ( user.emergency as unknown as any[] ) || [];
+    const packages = ( user.package as unknown as any[] ) || [];
+    const properties = ( user.property as unknown as any[] ) || [];
+
+    const filteredEmergency = emergencies.filter( e => !e.emergencyEnded );
+    const filteredPackage = packages.filter( p => !p.received );
+
+    const filteredProperty = properties.map( prop => ( {
+      ...prop,
+      package: ( prop.package as any[] || [] ).filter( p => !p.received ),
+      visitor: ( prop.visitor as any[] || [] ).filter( v => !v.visitCompleted )
+    } ) );
+
     return {
       ...user,
+      emergency: filteredEmergency,
+      package: filteredPackage,
+      property: filteredProperty,
       token: this.getJwtToken( { id: user.id } )
     };
   }
@@ -148,6 +164,20 @@ export class AuthService {
     return this.userRepository.find( {
       where: { isActive: true }
     } );
+  }
+
+  async findAllInactive() {
+    return this.userRepository.find( {
+      where: { isActive: false }
+    } );
+  }
+
+  async activateUser( id: string ) {
+    const user = await this.userRepository.findOne( { where: { id } } );
+    if ( !user ) throw new NotFoundException( `User with id ${ id } not found` );
+
+    user.isActive = true;
+    return this.userRepository.save( user );
   }
 
   async remove( id: string ) {

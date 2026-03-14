@@ -47,6 +47,12 @@ export class AuthController {
     return this.authService.findAllActive();
   }
 
+  @Get( 'inactive' )
+  @Auth( ValidRoles.admin )
+  getAllInactive() {
+    return this.authService.findAllInactive();
+  }
+
   @Get( ':id' )
   @Auth()
   getUser( @Param( 'id' ) id: string ) {
@@ -69,6 +75,12 @@ export class AuthController {
   @Auth( ValidRoles.admin )
   deleteUser( @Param( 'id' ) id: string ) {
     return this.authService.remove( id );
+  }
+
+  @Patch( 'activate/:id' )
+  @Auth( ValidRoles.admin )
+  activateUser( @Param( 'id' ) id: string ) {
+    return this.authService.activateUser( id );
   }
 
   @Get( 'private' )

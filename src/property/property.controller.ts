@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 
-import { Auth } from '../auth/decorators';
+import { Auth, GetUser } from '../auth/decorators';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { PropertyService } from './property.service';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { ValidRoles } from '../auth/interfaces';
+import { User } from '../auth/entities/user.entity';
 
 
 @Controller( 'property' )
@@ -24,6 +25,24 @@ export class PropertyController {
   @Auth()
   findAll() {
     return this.propertyService.findAll();
+  }
+
+  @Get( 'user/:userId' )
+  @Auth()
+  findByUser( @Param( 'userId' ) userId: string ) {
+    return this.propertyService.findByUser( userId );
+  }
+
+  @Get( 'my-properties' )
+  @Auth()
+  findMyProperties( @GetUser() user: User ) {
+    return this.propertyService.findByUser( user.id );
+  }
+
+  @Patch( 'set-main/:id' )
+  @Auth()
+  setMainProperty( @Param( 'id' ) id: string, @GetUser() user: User ) {
+    return this.propertyService.setMainProperty( id, user );
   }
 
   @Get( ':id' )

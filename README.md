@@ -227,10 +227,46 @@ Authorization: Bearer <TU_ACCESS_TOKEN>
 
 ### 5. Propiedades
 
+#### Crear propiedad
+- **POST** `/property` (solo admin)
+- **Body:**
+```json
+{
+  "user": "<ID_DE_USUARIO>",
+  "address": "Avenida 123",
+  "description": "Casa con pileta",
+  "isMain": true
+}
+```
+
 #### Listar todas las propiedades
 - **GET** `/property`
 
+#### Listar propiedades por usuario
+- **GET** `/property/user/:userId`
+
+#### Listar mis propiedades (usuario autenticado)
+- **GET** `/property/my-properties`
+
 #### Obtener propiedad por ID
 - **GET** `/property/:id`
+
+#### Actualizar propiedad
+- **PATCH** `/property/:id`
+- **Body:**
+```json
+{
+  "address": "Nueva dirección",
+  "description": "Nueva descripción",
+  "isMain": true
+}
+```
+
+#### Establecer propiedad como principal
+- **PATCH** `/property/set-main/:id`
+- (Al setear una como principal, las demás del mismo usuario automáticamente pierden el flag)
+
+#### Eliminar propiedad
+- **DELETE** `/property/:id` (solo admin)
 
 *(Nota: Se requiere el ID de una propiedad existente para crear paquetes y visitantes. Obtén los IDs del endpoint GET /property)*
