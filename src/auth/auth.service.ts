@@ -22,8 +22,16 @@ export class AuthService {
   async create( createUserDto: CreateUserDto ) {
     try {
       const { password, ...userData } = createUserDto;
+      
+      // Asegurar que todos los usuarios tengan el rol 'user' por defecto
+      const roles = userData.roles || [];
+      if ( !roles.includes( 'user' ) ) {
+        roles.push( 'user' );
+      }
+      
       const user = this.userRepository.create( {
         ...userData,
+        roles,
         password: bcrypt.hashSync( password, 10 )
       } );
       await this.userRepository.save( user );
