@@ -20,10 +20,13 @@ export class PropertyService {
 
   async create( createPropertyDto: CreatePropertyDto ): Promise<Property> {
     if ( createPropertyDto.isMain ) {
-      await this.clearMainProperty( createPropertyDto.user.id );
+      await this.clearMainProperty( createPropertyDto.user );
     }
 
-    const property = this.propertyRepository.create( createPropertyDto );
+    const property = this.propertyRepository.create( {
+      ...createPropertyDto,
+      user: { id: createPropertyDto.user }
+    } );
     const savedProperty = await this.handleDatabaseOperation( () => this.propertyRepository.save( property ) );
     return this.propertyRepository.findOne( {
       where: { id: savedProperty.id },

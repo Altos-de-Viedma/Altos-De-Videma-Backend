@@ -1,12 +1,11 @@
 import { IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
 
-import { User } from '../../auth/entities/user.entity';
-
 
 export class CreatePropertyDto {
 
   @IsUUID()
-  user: User;
+  @IsString()
+  user: string;
 
   @IsString()
   address: string;
