@@ -56,6 +56,9 @@ export class AuthService {
     if ( !user )
       throw new UnauthorizedException( 'Credentials are not valid (email)' );
 
+    if ( !user.isActive )
+      throw new UnauthorizedException( 'Usuario bloqueado. Contacte al administrador.' );
+
     if ( !bcrypt.compareSync( password, user.password ) )
       throw new UnauthorizedException( 'Credentials are not valid (password)' );
 
@@ -72,6 +75,9 @@ export class AuthService {
   }
 
   async checkAuthStatus( user: User ) {
+    if ( !user.isActive )
+      throw new UnauthorizedException( 'Usuario bloqueado. Contacte al administrador.' );
+
     return {
       ...user,
       token: this.getJwtToken( { id: user.id } )
