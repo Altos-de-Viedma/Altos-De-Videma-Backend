@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 import * as bcrypt from 'bcryptjs';
+import { ConfigService } from '@nestjs/config';
 
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginUserDto, CreateUserDto } from './dto';
@@ -17,6 +18,7 @@ export class AuthService {
     @InjectRepository( User )
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) { }
 
   async create( createUserDto: CreateUserDto ) {
@@ -144,11 +146,53 @@ export class AuthService {
       visitor: ( prop.visitor as any[] || [] ).filter( v => !v.visitCompleted )
     } ) );
 
+    // Get unique visitors by DNI from all properties (past and future visits)
+    // Prioritizing the most recent visit for each DNI
+    const allVisitorsMap = new Map<string, any>();
+    properties.forEach( prop => {
+      const visitors = ( prop.visitor as any[] ) || [];
+      visitors.forEach( visitor => {
+        // Use DNI as unique identifier if available, otherwise use visitor id
+        const uniqueKey = visitor.dni || visitor.id;
+        
+        const visitorData = {
+          id: visitor.id,
+          fullName: visitor.fullName,
+          dni: visitor.dni,
+          phone: visitor.phone,
+          dateAndTimeOfVisit: visitor.dateAndTimeOfVisit,
+          visitCompleted: visitor.visitCompleted,
+          propertyAddress: prop.address,
+          propertyId: prop.id,
+          description: visitor.description,
+          vehiclePlate: visitor.vehiclePlate,
+          profilePicture: visitor.profilePicture,
+          status: visitor.status,
+          date: visitor.date
+        };
+        
+        if ( !allVisitorsMap.has( uniqueKey ) ) {
+          allVisitorsMap.set( uniqueKey, visitorData );
+        } else {
+          // Compare dates and keep the most recent visitor
+          const existingVisitor = allVisitorsMap.get( uniqueKey );
+          const existingDate = new Date( existingVisitor.date );
+          const newDate = new Date( visitorData.date );
+          
+          if ( newDate > existingDate ) {
+            allVisitorsMap.set( uniqueKey, visitorData );
+          }
+        }
+      } );
+    } );
+    const uniqueVisitors = Array.from( allVisitorsMap.values() );
+
     return {
       ...user,
       emergency: filteredEmergency,
       package: filteredPackage,
       property: filteredProperty,
+      visitors: uniqueVisitors,
       token: this.getJwtToken( { id: user.id } )
     };
   }
@@ -203,7 +247,9 @@ export class AuthService {
   }
 
   private getJwtToken( payload: JwtPayload ) {
-    const token = this.jwtService.sign( payload );
+    const token = this.jwtService.sign( payload, {
+      expiresIn: this.configService.get('JWT_EXPIRATION') || '1d',
+    });
     return token;
   }
 

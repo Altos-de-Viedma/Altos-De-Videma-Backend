@@ -2,26 +2,40 @@
 
 Backend para la gestión integral del barrio privado Altos de Videma. Construido con NestJS, ofrece una API RESTful robusta y escalable para manejar todas las operaciones necesarias.
 
+**Versión:** 1.0.0  
+**Última actualización:** 2025-03-15  
+**Estado:** 🟢 Production Ready
+
 ## Características Principales
 
 - **Autenticación y Autorización:** Sistema de usuarios con roles y protección de rutas mediante JWT.
 - **Gestión de Propiedades:** Administración de unidades funcionales, propietarios e inquilinos.
-- **Control de Visitantes:** Registro y seguimiento de visitantes.
+- **Control de Visitantes:** Registro y seguimiento de visitantes con DNI único y patente de vehículo.
 - **Gestión de Paquetería:** Notificación y registro de paquetes recibidos.
 - **Comunicación:** Sistema de mensajería en tiempo real a través de WebSockets.
 - **Notificaciones:** Envío de notificaciones push a los residentes.
 - **Gestión de Emergencias:** Reporte y seguimiento de emergencias.
 - **Subida de Archivos:** Manejo de archivos y documentos.
 
+## Seguridad
+
+- 🔒 Helmet.js para cabeceras de seguridad HTTP
+- 🔒 CORS configurado con orígenes permitidos
+- 🔒 Validación de datos con class-validator
+- 🔒 JWT con expiración configurable
+- 🔒 Filtros de excepciones para manejo seguro de errores
+- 🔒 SSL/TLS para conexiones a base de datos en producción
+
 ## Tecnologías Utilizadas
 
-- [NestJS](https://nestjs.com/) - Framework de Node.js para construir aplicaciones eficientes y escalables.
-- [TypeScript](https://www.typescriptlang.org/) - Superset de JavaScript que añade tipado estático.
-- [TypeORM](https://typeorm.io/) - ORM para TypeScript y JavaScript.
-- [PostgreSQL](https://www.postgresql.org/) - Base de datos relacional.
+- [NestJS](https://nestjs.com/) v10 - Framework de Node.js para construir aplicaciones eficientes y escalables.
+- [TypeScript](https://www.typescriptlang.org/) v5 - Superset de JavaScript que añade tipado estático.
+- [TypeORM](https://typeorm.io/) v0.3 - ORM para TypeScript y JavaScript.
+- [PostgreSQL](https://www.postgresql.org/) v14 - Base de datos relacional.
 - [JWT](https://jwt.io/) - Para la generación de tokens de acceso.
-- [Socket.IO](https://socket.io/) - Para la comunicación en tiempo real.
+- [Socket.IO](https://socket.io/) v4 - Para la comunicación en tiempo real.
 - [Docker](https://www.docker.com/) - Para la contenerización de la aplicación.
+- [Helmet](https://helmetjs.github.io/) - Para asegurar cabeceras HTTP.
 
 ## Empezando
 
@@ -29,72 +43,145 @@ Sigue estas instrucciones para tener una copia del proyecto corriendo en tu máq
 
 ### Pre-requisitos
 
-- [Node.js](https://nodejs.org/es/) (v16 o superior)
+- [Node.js](https://nodejs.org/es/) (v20 o superior)
 - [Yarn](https://yarnpkg.com/)
-- [Docker](https://www.docker.com/get-started)
+- [Docker](https://www.docker.com/get-started) (opcional, para desarrollo local)
 
 ### Instalación
 
-1.  **Clonar el repositorio:**
+1. **Clonar el repositorio:**
     ```bash
     git clone https://github.com/tomas-massini/Altos-De-Videma-Backend.git
     cd Altos-De-Videma-Backend
     ```
 
-2.  **Instalar dependencias:**
+2. **Instalar dependencias:**
     ```bash
     yarn install
     ```
 
-3.  **Configurar las variables de entorno:**
+3. **Configurar las variables de entorno:**
     Copia el archivo `.env.template` a un nuevo archivo llamado `.env`.
     ```bash
     cp .env.template .env
     ```
-    Luego, modifica el archivo `.env` con la configuración de tu base de datos y otras variables necesarias.
+    
+    **IMPORTANTE:** En producción, cambia los siguientes valores:
+    - `JWT_SECRET` - Genera uno nuevo con: `openssl rand -base64 32`
+    - `DB_PASSWORD` - Usa una contraseña segura
+    - `ALLOWED_ORIGINS` - Configura los dominios de tu frontend
 
-4.  **Levantar la base de datos con Docker:**
+4. **Levantar la base de datos con Docker (opcional):**
     ```bash
-    docker-compose up -d
+    docker-compose up -d db
     ```
 
 ### Ejecutando la Aplicación
 
--   **Modo Desarrollo (con hot-reload):**
+- **Modo Desarrollo (con hot-reload):**
     ```bash
     yarn start:dev
     ```
 
--   **Build para Producción:**
+- **Build para Producción:**
     ```bash
     yarn build
     ```
 
--   **Iniciar en modo Producción:**
+- **Iniciar en modo Producción:**
     ```bash
     yarn start:prod
     ```
 
+### Ejecutando con Docker (Producción)
+
+```bash
+docker-compose up -d --build
+```
+
+La API estará disponible en `http://localhost:3001`
+
 ### Ejecutando los Tests
 
--   **Tests Unitarios:**
+- **Tests Unitarios:**
     ```bash
     yarn test
     ```
 
--   **Tests con coverage:**
+- **Tests con coverage:**
     ```bash
     yarn test:cov
     ```
 
-## Estructura del Proyecto
+## Documentación de la API
 
-El proyecto sigue la estructura estándar de una aplicación NestJS, con módulos para cada una de las características principales.
+Una vez levantada la aplicación, puedes acceder a la documentación interactiva de Swagger en:
+
+- **Swagger UI:** `http://localhost:3001/api/docs`
+
+Todos los endpoints (excepto login y registro) requieren autenticación JWT. Incluir el header:
+```
+Authorization: Bearer <TU_ACCESS_TOKEN>
+```
+
+### Endpoints Principales
+
+#### 1. Autenticación
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/auth/register` | Registrar nuevo usuario |
+| POST | `/auth/login` | Iniciar sesión |
+| GET | `/auth/check-status` | Verificar estado de autenticación |
+| GET | `/auth/phone/:phone` | Obtener usuario y visitantes por teléfono |
+
+#### 2. Visitantes
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/visitor` | Crear visitante |
+| GET | `/visitor` | Listar todos los visitantes |
+| GET | `/visitor/:id` | Obtener visitante por ID |
+| PATCH | `/visitor/:id` | Actualizar visitante |
+| PATCH | `/visitor/visit-completed/:id` | Marcar visita como completada |
+| DELETE | `/visitor/:id` | Eliminar visitante |
+
+#### 3. Propiedades
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/property` | Crear propiedad |
+| GET | `/property` | Listar todas las propiedades |
+| GET | `/property/my-properties` | Listar mis propiedades |
+| GET | `/property/:id` | Obtener propiedad por ID |
+| PATCH | `/property/:id` | Actualizar propiedad |
+| PATCH | `/property/set-main/:id` | Establecer propiedad como principal |
+
+#### 4. Paquetes
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/package` | Crear paquete |
+| GET | `/package` | Listar todos los paquetes |
+| GET | `/package/user/packages` | Listar mis paquetes |
+| PATCH | `/package/mark-as-received/:id` | Marcar como recibido |
+| DELETE | `/package/:id` | Eliminar paquete |
+
+#### 5. Emergencias
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/emergency` | Crear emergencia |
+| GET | `/emergency` | Listar emergencias |
+| PATCH | `/emergency/end/:id` | Finalizar emergencia |
+| PATCH | `/emergency/seen/:id` | Marcar como leída |
+
+## Estructura del Proyecto
 
 ```
 src/
 ├── auth/             # Autenticación y usuarios
-├── common/           # DTOs y utilidades comunes
+├── common/           # DTOs, filtros y utilidades comunes
 ├── emergency/        # Módulo de emergencias
 ├── files/            # Gestión de archivos
 ├── messages-ws/      # WebSocket para mensajería
@@ -106,167 +193,39 @@ src/
 └── main.ts           # Archivo de entrada
 ```
 
-## API Reference
+## Variables de Entorno
 
-Todos los endpoints (excepto login) requieren autenticación JWT. Incluir el header:
-```
-Authorization: Bearer <TU_ACCESS_TOKEN>
+| Variable | Descripción | Default |
+|----------|-------------|---------|
+| `PORT` | Puerto del servidor | 3001 |
+| `STAGE` | Entorno (dev/prod) | dev |
+| `DB_HOST` | Host de la base de datos | localhost |
+| `DB_PORT` | Puerto de la base de datos | 5432 |
+| `DB_NAME` | Nombre de la base de datos | altosdeviedma |
+| `DB_USERNAME` | Usuario de la base de datos | postgres |
+| `DB_PASSWORD` | Contraseña de la base de datos | - |
+| `JWT_SECRET` | Secreto para JWT | - |
+| `JWT_EXPIRATION` | Expiración del token | 1d |
+| `ALLOWED_ORIGINS` | Orígenes CORS permitidos | localhost |
+
+## Despliegue
+
+### Vercel
+
+El proyecto está configurado para desplegarse en Vercel. El archivo `vercel.json` contiene la configuración necesaria.
+
+### Docker
+
+Para producción, usa Docker Compose:
+
+```bash
+docker-compose up -d --build
 ```
 
-### 1. Autenticación
+## License
 
-#### Login
-- **POST** `/auth/login`
-- **Body:**
-```json
-{
-  "email": "admin@test.com",
-  "password": "123456"
-}
-```
-- **Respuesta:** `{ "access_token": "eyJ..." }`
+UNLICENSED - Todos los derechos reservados.
 
 ---
 
-### 2. Emergencias
-
-#### Crear emergencia
-- **POST** `/emergency`
-- **Body:**
-```json
-{
-  "title": "Incendio en cocina",
-  "description": "Se detectó humo en el área de cocina"
-}
-```
-
-#### Listar todas las emergencias
-- **GET** `/emergency`
-
-#### Obtener emergencia por ID
-- **GET** `/emergency/:id`
-
-#### Obtener emergencias por usuario
-- **GET** `/emergency/user/:userId`
-
-#### Finalizar emergencia
-- **PATCH** `/emergency/end/:id`
-
-#### Marcar como leída
-- **PATCH** `/emergency/seen/:id`
-
-#### Eliminar emergencia
-- **DELETE** `/emergency/:id`
-
----
-
-### 3. Paquetes
-
-#### Crear paquete
-- **POST** `/package`
-- **Body:**
-```json
-{
-  "arrivalDate": "2024-01-15",
-  "title": "Paquete Amazon",
-  "description": "Caja mediana con electronics",
-  "propertyId": "<ID_DE_PROPIEDAD>"
-}
-```
-
-#### Listar todos los paquetes
-- **GET** `/package`
-
-#### Listar paquetes del usuario
-- **GET** `/package/user/packages`
-
-#### Obtener paquete por ID
-- **GET** `/package/:id`
-
-#### Marcar como recibido
-- **PATCH** `/package/mark-as-received/:id`
-
-#### Eliminar paquete
-- **DELETE** `/package/:id`
-
----
-
-### 4. Visitantes
-
-#### Crear visitante
-- **POST** `/visitor`
-- **Body:**
-```json
-{
-  "property": "<ID_DE_PROPIEDAD>",
-  "dateAndTimeOfVisit": "2024-01-20T14:00:00Z",
-  "fullName": "Juan Pérez",
-  "dni": "12345678",
-  "phone": "+5491155555555",
-  "description": "Visita familiar",
-  "vehiclePlate": "ABC123"
-}
-```
-
-#### Listar todos los visitantes
-- **GET** `/visitor`
-
-#### Obtener visitante por ID
-- **GET** `/visitor/:id`
-
-#### Actualizar visitante
-- **PATCH** `/visitor/:id`
-
-#### Marcar visita como completada
-- **PATCH** `/visitor/visit-completed/:id`
-
-#### Eliminar visitante
-- **DELETE** `/visitor/:id`
-
----
-
-### 5. Propiedades
-
-#### Crear propiedad
-- **POST** `/property` (solo admin)
-- **Body:**
-```json
-{
-  "user": "<ID_DE_USUARIO>",
-  "address": "Avenida 123",
-  "description": "Casa con pileta",
-  "isMain": true
-}
-```
-
-#### Listar todas las propiedades
-- **GET** `/property`
-
-#### Listar propiedades por usuario
-- **GET** `/property/user/:userId`
-
-#### Listar mis propiedades (usuario autenticado)
-- **GET** `/property/my-properties`
-
-#### Obtener propiedad por ID
-- **GET** `/property/:id`
-
-#### Actualizar propiedad
-- **PATCH** `/property/:id`
-- **Body:**
-```json
-{
-  "address": "Nueva dirección",
-  "description": "Nueva descripción",
-  "isMain": true
-}
-```
-
-#### Establecer propiedad como principal
-- **PATCH** `/property/set-main/:id`
-- (Al setear una como principal, las demás del mismo usuario automáticamente pierden el flag)
-
-#### Eliminar propiedad
-- **DELETE** `/property/:id` (solo admin)
-
-*(Nota: Se requiere el ID de una propiedad existente para crear paquetes y visitantes. Obtén los IDs del endpoint GET /property)*
+**Altos de Viedma Backend** - Sistema de gestión para barrios privados.

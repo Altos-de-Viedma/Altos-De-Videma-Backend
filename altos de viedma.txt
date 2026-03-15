@@ -1,0 +1,19 @@
+docker build -t airepublico/advf:latest ./
+
+docker tag airepublico/advf:latest airepublico/advf
+
+docker push airepublico/advf
+
+docker run -d -p 3000:80 --env-file .env airepublico/advf
+
+
+
+
+
+docker build -t airepublico/advb:latest ./
+
+docker tag airepublico/advb:latest airepublico/advb
+
+docker push airepublico/advb
+
+docker run -d -p 3010:3010 --env-file .env airepublico/advb

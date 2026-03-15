@@ -1,39 +1,87 @@
-import { IsArray, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-
+import { IsArray, IsString, IsEmail, IsOptional, Matches, MaxLength, MinLength, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
 
+  @ApiProperty({
+    description: 'User email address (used as username)',
+    example: 'user@example.com',
+  })
   @IsString()
+  @IsEmail()
   username: string;
 
+  @ApiProperty({
+    description: 'User password (min 6 chars, must contain uppercase, lowercase and number)',
+    example: 'Password123',
+    minLength: 6,
+    maxLength: 50,
+  })
   @IsString()
-  @MinLength( 6 )
-  @MaxLength( 50 )
+  @MinLength(6)
+  @MaxLength(50)
   @Matches(
-    /(?:(?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'The password must have a Uppercase, lowercase letter and a number'
-  } )
+    /(?:(?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/,
+    { message: 'The password must contain at least one uppercase letter, one lowercase letter, and one number' }
+  )
   password: string;
 
+  @ApiProperty({
+    description: 'User first name',
+    example: 'John',
+    minLength: 2,
+  })
   @IsString()
-  @MinLength( 2 )
+  @MinLength(2)
+  @MaxLength(50)
   name: string;
 
+  @ApiProperty({
+    description: 'User last name',
+    example: 'Doe',
+    minLength: 2,
+  })
   @IsString()
-  @MinLength( 2 )
+  @MinLength(2)
+  @MaxLength(50)
   lastName: string;
 
+  @ApiProperty({
+    description: 'User phone number',
+    example: '+5491165627356',
+    minLength: 8,
+  })
   @IsString()
-  @MinLength( 2 )
+  @MinLength(8)
+  @MaxLength(20)
+  @Matches(/^[0-9+\-\s()]+$/, { message: 'Invalid phone number format' })
   phone: string;
 
+  @ApiProperty({
+    description: 'User address',
+    example: 'Av. San Martín 1234',
+    minLength: 5,
+  })
   @IsString()
-  @MinLength( 2 )
+  @MinLength(5)
+  @MaxLength(100)
   address: string;
 
+  @ApiPropertyOptional({
+    description: 'User roles (default: ["user"])',
+    example: ['user'],
+  })
+  @IsOptional()
   @IsArray()
-  @IsString( { each: true } )
-  @MinLength( 1, { each: true } )
-  roles: string[];
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  roles?: string[];
 
+  @ApiPropertyOptional({
+    description: 'Whether the user account is active',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
