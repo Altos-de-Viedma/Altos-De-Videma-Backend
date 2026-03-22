@@ -53,9 +53,5 @@ USER nodejs
 # Expose port (configurable via PORT env var, default 3010)
 EXPOSE 3010
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3010}/api/health || exit 1
-
 # Start the application with dumb-init
 CMD ["dumb-init", "node", "dist/main.js"]
