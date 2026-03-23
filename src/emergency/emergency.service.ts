@@ -9,6 +9,11 @@ import { Emergency } from './entities/emergency.entity';
 
 type ErrorType = 'NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'UNAUTHORIZED';
 
+// Función para obtener fecha actual en Buenos Aires
+const getBuenosAiresDate = (): Date => {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+};
+
 @Injectable()
 export class EmergencyService {
   constructor(
@@ -20,7 +25,7 @@ export class EmergencyService {
     const emergency = this.emergencyRepository.create( {
       ...createEmergencyDto,
       user,
-      date: new Date(),
+      date: getBuenosAiresDate(), // Usar hora de Buenos Aires
     } );
     return this.handleDatabaseOperation( () => this.emergencyRepository.save( emergency ) );
   }

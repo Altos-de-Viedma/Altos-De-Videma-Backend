@@ -9,6 +9,11 @@ import { User } from '../auth/entities/user.entity';
 
 type ErrorType = 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_SERVER_ERROR' | 'FORBIDDEN';
 
+// Función para obtener fecha actual en Buenos Aires
+const getBuenosAiresDate = (): Date => {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+};
+
 @Injectable()
 export class NotificationService {
 
@@ -27,7 +32,7 @@ export class NotificationService {
 
     const notification = this.notificationRepository.create( {
       ...createNotificationDto,
-      date: new Date(),
+      date: getBuenosAiresDate(), // Usar hora de Buenos Aires
       user
     } );
     return this.handleDatabaseOperation( () => this.notificationRepository.save( notification ) );

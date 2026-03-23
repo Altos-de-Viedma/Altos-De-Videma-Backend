@@ -1,6 +1,11 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Property } from '../../property/entities/property.entity';
+
+// Función para obtener fecha actual en Buenos Aires
+const getBuenosAiresDate = (): Date => {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+};
 
 @Entity()
 export class Visitor {
@@ -44,4 +49,12 @@ export class Visitor {
 
   @Column( 'text', { default: 'https://i.imgur.com/O7WbIax.png' } )
   profilePicture: string;
+
+  @BeforeInsert()
+  setCreationDate() {
+    // Establecer fecha en hora de Buenos Aires
+    if (!this.date) {
+      this.date = getBuenosAiresDate();
+    }
+  }
 }

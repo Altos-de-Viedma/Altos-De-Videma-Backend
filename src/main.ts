@@ -5,6 +5,10 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // CONFIGURACIÓN GLOBAL DE TIMEZONE - BUENOS AIRES, ARGENTINA
+  process.env.TZ = 'America/Argentina/Buenos_Aires';
+
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
