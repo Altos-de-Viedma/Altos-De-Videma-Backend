@@ -24,7 +24,11 @@
     "security:check": "npm audit && npm outdated",
     "security:update": "npm update && npm audit fix",
     "preinstall": "npx check-node-version --node \">= 18.0.0\" --npm \">= 8.0.0\"",
-    "postinstall": "npm audit --audit-level moderate"
+    "postinstall": "npm audit --audit-level moderate",
+    "setup:secrets": "ts-node scripts/setup-secrets.ts",
+    "deploy:production": "./scripts/deploy-production.sh",
+    "test:secrets": "node -e \"console.log('Testing secrets...'); try { require('./dist/config/secure-config').SecureConfig.getInstance(); console.log('✅ Secrets system working'); } catch(e) { console.error('❌ Secrets system failed:', e.message); process.exit(1); }\"",
+    "security:scan": "npm audit && npm outdated && echo '✅ Security scan complete'"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",

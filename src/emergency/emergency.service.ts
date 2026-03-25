@@ -9,6 +9,7 @@ import { CreateEmergencyDto } from './dto/create-emergency.dto';
 import { UpdateEmergencyDto } from './dto/update-emergency.dto';
 import { User } from '../auth/entities/user.entity';
 import { Emergency } from './entities/emergency.entity';
+import { ConfigService as SecureConfigService } from '../config/config.service';
 
 type ErrorType = 'NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'UNAUTHORIZED';
 
@@ -19,6 +20,8 @@ const getBuenosAiresDate = (): Date => {
 
 @Injectable()
 export class EmergencyService {
+  private readonly secureConfig = new SecureConfigService();
+
   constructor(
     @InjectRepository( Emergency )
     private readonly emergencyRepository: Repository<Emergency>,
@@ -125,7 +128,8 @@ export class EmergencyService {
 
   private async sendEmergencySeenNotification(emergency: Emergency, authHeader?: string): Promise<void> {
     try {
-      const n8nUrl = this.configService.get('N8N_URL');
+      const webhookConfig = this.secureConfig.webhookConfig;
+      const n8nUrl = webhookConfig.n8nUrl;
       const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
       const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 
@@ -170,7 +174,8 @@ export class EmergencyService {
 
   private async sendEmergencyEndedNotification(emergency: Emergency, authHeader?: string): Promise<void> {
     try {
-      const n8nUrl = this.configService.get('N8N_URL');
+      const webhookConfig = this.secureConfig.webhookConfig;
+      const n8nUrl = webhookConfig.n8nUrl;
       const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
       const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 

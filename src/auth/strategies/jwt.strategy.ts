@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { ConfigService as SecureConfigService } from '../../config/config.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy( Strategy ) {
@@ -16,11 +17,12 @@ export class JwtStrategy extends PassportStrategy( Strategy ) {
         private readonly userRepository: Repository<User>,
         configService: ConfigService
     ) {
+        const secureConfig = new SecureConfigService();
+        const jwtConfig = secureConfig.jwtConfig;
 
         super({
-            secretOrKey: configService.get('JWT_SECRET'),
+            secretOrKey: jwtConfig.secret,
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            expiresIn: configService.get('JWT_EXPIRATION'),
         });
     }
 

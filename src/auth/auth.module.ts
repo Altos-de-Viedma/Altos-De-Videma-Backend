@@ -11,6 +11,7 @@ import { Emergency } from '../emergency/entities/emergency.entity';
 import { Package } from '../package/entities/package.entity';
 import { Visitor } from '../visitor/entities/visitor.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ConfigService as SecureConfigService } from '../config/config.service';
 
 @Module({
   controllers: [AuthController],
@@ -26,12 +27,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ ConfigModule ],
       inject: [ ConfigService ],
       useFactory: ( configService: ConfigService ) => {
-        // console.log('JWT Secret', configService.get('JWT_SECRET') )
-        // console.log('JWT SECRET', process.env.JWT_SECRET)
+        const secureConfig = new SecureConfigService();
+        const jwtConfig = secureConfig.jwtConfig;
+
         return {
-          secret: configService.get('JWT_SECRET'),
+          secret: jwtConfig.secret,
           signOptions: {
-            expiresIn:'2h'
+            expiresIn: jwtConfig.expiresIn
           }
         }
       }

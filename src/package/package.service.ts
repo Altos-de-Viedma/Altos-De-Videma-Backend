@@ -10,9 +10,12 @@ import { UpdatePackageDto } from './dto/update-package.dto';
 import { Package } from './entities/package.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
+import { ConfigService as SecureConfigService } from '../config/config.service';
 
 @Injectable()
 export class PackageService {
+  private readonly secureConfig = new SecureConfigService();
+
   constructor(
     @InjectRepository( Package )
     private packageRepository: Repository<Package>,
@@ -89,7 +92,8 @@ export class PackageService {
 
   private async sendPackageReceivedNotification(packageEntity: Package, authHeader?: string): Promise<void> {
     try {
-      const n8nUrl = this.configService.get('N8N_URL');
+      const webhookConfig = this.secureConfig.webhookConfig;
+      const n8nUrl = webhookConfig.n8nUrl;
       const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
       const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 

@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
+import { ConfigService as SecureConfigService } from './config/config.service';
+
 import { CommonModule } from './common/common.module';
 // import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
@@ -29,27 +31,32 @@ import { InvoiceModule } from './invoice/invoice.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        database: configService.get('DB_NAME'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        autoLoadEntities: true,
-        // IMPORTANT: Set to false in production after initial migration
-        synchronize: configService.get('STAGE') !== 'prod',
-        ssl: configService.get('STAGE') === 'prod',
-        extra: {
-          ssl: configService.get('STAGE') === 'prod'
-            ? { rejectUnauthorized: false }
-            : null,
-        },
-        // Connection pool settings for production
-        poolSize: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secureConfig = new SecureConfigService();
+        const dbConfig = secureConfig.databaseConfig;
+
+        return {
+          type: 'postgres',
+          host: dbConfig.host,
+          port: dbConfig.port,
+          database: dbConfig.database,
+          username: dbConfig.username,
+          password: dbConfig.password,
+          autoLoadEntities: true,
+          // IMPORTANT: Set to false in production after initial migration
+          synchronize: configService.get('STAGE') !== 'prod',
+          ssl: configService.get('STAGE') === 'prod',
+          extra: {
+            ssl: configService.get('STAGE') === 'prod'
+              ? { rejectUnauthorized: false }
+              : null,
+          },
+          // Connection pool settings for production
+          poolSize: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        };
+      },
     }),
 
     // ServeStaticModule.forRoot({
