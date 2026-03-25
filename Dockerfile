@@ -1,19 +1,28 @@
 # Production Dockerfile for Altos de Viedma Backend
-# Updated: 2025-03-15
+# Updated: 2026-03-25 - Enhanced Security Configuration
 
 # Build stage
 FROM node:20-alpine AS builder
 
+# Security: Update packages and remove unnecessary ones
+RUN apk update && apk upgrade && \
+    apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
+
 WORKDIR /app
 
-# Copy package files
-COPY package*.json yarn.lock* ./
+# Security: Create non-root user early
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# Install dependencies
-RUN yarn install --frozen-lockfile --production=false
+# Copy package files
+COPY package*.json yarn.lock* .npmrc ./
+
+# Security: Install dependencies with ignore-scripts
+RUN yarn install --frozen-lockfile --production=false --ignore-scripts
 
 # Copy source code
-COPY . .
+COPY --chown=nodejs:nodejs . .
 
 # Build the application
 RUN yarn build
@@ -21,37 +30,48 @@ RUN yarn build
 # Production stage
 FROM node:20-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Security: Update packages and install security tools
+RUN apk update && apk upgrade && \
+    apk add --no-cache dumb-init tini && \
+    rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
-# Set NODE_ENV to production
-ENV NODE_ENV=production
-
-# Copy package files
-COPY package*.json yarn.lock* ./
-
-# Install only production dependencies
-RUN yarn install --frozen-lockfile --production=true && \
-    yarn cache clean
-
-# Copy built application from builder stage
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
-
-# Create non-root user for security
+# Security: Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Change ownership of the app directory
-RUN chown -R nodejs:nodejs /app
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+ENV NPM_CONFIG_IGNORE_SCRIPTS=true
+
+# Copy package files
+COPY --chown=nodejs:nodejs package*.json yarn.lock* .npmrc ./
+
+# Security: Install only production dependencies with ignore-scripts
+RUN yarn install --frozen-lockfile --production=true --ignore-scripts && \
+    yarn cache clean && \
+    npm audit --audit-level moderate
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+
+# Security: Remove write permissions from application files
+RUN chmod -R 555 /app && \
+    chmod -R 444 /app/dist && \
+    chmod -R 444 /app/public
 
 # Switch to non-root user
 USER nodejs
 
-# Expose port (configurable via PORT env var, default 3010)
+# Security: Use non-privileged port
 EXPOSE 3010
 
-# Start the application with dumb-init
-CMD ["dumb-init", "node", "dist/main.js"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3010/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Security: Start with tini for proper signal handling and security
+ENTRYPOINT ["tini", "--"]
+CMD ["node", "dist/main.js"]

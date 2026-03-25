@@ -1,0 +1,38 @@
+# GitHub Dependabot Configuration for Security Updates
+# Automatically updates dependencies to fix security vulnerabilities
+
+version: 2
+updates:
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "security-team"
+    assignees:
+      - "lead-developer"
+    commit-message:
+      prefix: "security"
+      include: "scope"
+    # Security-focused configuration
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+      - dependency-type: "indirect"
+        update-type: "security"
+    # Auto-merge security patches
+    auto-merge:
+      dependency-type: "security"
+    # Ignore major version updates for stability
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Security labels
+    labels:
+      - "security"
+      - "dependencies"
+      - "automated"
