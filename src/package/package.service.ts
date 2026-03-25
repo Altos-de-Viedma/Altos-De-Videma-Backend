@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -15,6 +18,8 @@ export class PackageService {
     private packageRepository: Repository<Package>,
     @InjectRepository( Property )
     private propertyRepository: Repository<Property>,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) { }
 
   async create( createPackageDto: CreatePackageDto, user: User ) {
@@ -44,7 +49,10 @@ export class PackageService {
   }
 
   async findOne( id: string ) {
-    const packageFound = await this.packageRepository.findOne( { where: { id } } );
+    const packageFound = await this.packageRepository.findOne({
+      where: { id },
+      relations: ['user', 'property']
+    });
     if ( !packageFound ) {
       throw new NotFoundException( `Package with ID "${ id }" not found` );
     }
@@ -58,7 +66,7 @@ export class PackageService {
   }
 
 
-  async markAsReceived( id: string, user: User ) {
+  async markAsReceived( id: string, user: User, authHeader?: string ) {
     const packageToUpdate = await this.findOne( id );
 
     if ( !user.roles.includes( 'admin' ) && !user.roles.includes( 'security' ) && packageToUpdate.user.id !== user.id ) {
@@ -66,7 +74,62 @@ export class PackageService {
     }
 
     packageToUpdate.received = true;
-    return await this.packageRepository.save( packageToUpdate );
+    const updatedPackage = await this.packageRepository.save( packageToUpdate );
+
+    // Enviar notificación a N8N después de marcar como recibido
+    try {
+      await this.sendPackageReceivedNotification(packageToUpdate, authHeader);
+    } catch (error) {
+      console.error('Error sending package received notification:', error);
+      // No lanzamos el error para no afectar la funcionalidad principal
+    }
+
+    return updatedPackage;
+  }
+
+  private async sendPackageReceivedNotification(packageEntity: Package, authHeader?: string): Promise<void> {
+    try {
+      const n8nUrl = this.configService.get('N8N_URL');
+      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
+      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
+
+      if (!n8nUrl || !evolutionApiUrl || !instanceName || !packageEntity.user.phone) {
+        console.log('Missing configuration or phone number for package received notification');
+        return;
+      }
+
+      // Extraer el token del header Authorization
+      const bearerToken = authHeader?.replace('Bearer ', '') || '';
+
+      if (!bearerToken) {
+        console.log('No JWT token available for package received notification');
+        return;
+      }
+
+      const message = `📦 *Paquete Recibido* 📦\n\nSeguridad acaba de marcar que recibió el paquete:\n\n📋 *Título:* ${packageEntity.title}\n📝 *Descripción:* ${packageEntity.description}\n\n✅ Su paquete fue recibido exitosamente.`;
+
+      const payload = {
+        phoneNumber: packageEntity.user.phone,
+        serverUrl: evolutionApiUrl,
+        message: message,
+        instanceName: instanceName,
+        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      await firstValueFrom(
+        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+      );
+
+      console.log(`Package received notification sent for package ${packageEntity.id}`);
+    } catch (error) {
+      console.error('Failed to send package received notification:', error);
+      throw error;
+    }
   }
 
   async remove( id: string ) {

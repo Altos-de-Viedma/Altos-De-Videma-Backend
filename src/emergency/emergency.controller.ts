@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 
 import { EmergencyService } from './emergency.service';
 import { CreateEmergencyDto } from './dto/create-emergency.dto';
@@ -45,14 +45,14 @@ export class EmergencyController {
 
   @Patch( '/end/:id' )
   @Auth()
-  emergencyEnded( @Param( 'id' ) id: string, @GetUser() user: User ) {
-    return this.emergencyService.emergencyEnded( id, user );
+  emergencyEnded( @Param( 'id' ) id: string, @GetUser() user: User, @Headers('authorization') authHeader: string ) {
+    return this.emergencyService.emergencyEnded( id, user, authHeader );
   }
 
   @Patch( '/seen/:id' )
   @Auth()
-  markAsSeen( @Param( 'id' ) id: string, @GetUser() user: User ) {
-    return this.emergencyService.markAsSeen( id, user );
+  markAsSeen( @Param( 'id' ) id: string, @GetUser() user: User, @Headers('authorization') authHeader: string ) {
+    return this.emergencyService.markAsSeen( id, user, authHeader );
   }
 
   @Delete( ':id' )

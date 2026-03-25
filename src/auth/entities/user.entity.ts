@@ -4,6 +4,7 @@ import { Property } from '../../property/entities/property.entity';
 import { Notification } from '../../notification/entities/notification.entity';
 import { Emergency } from '../../emergency/entities/emergency.entity';
 import { Package } from '../../package/entities/package.entity';
+import { Invoice } from '../../invoice/entities/invoice.entity';
 
 // Función para obtener fecha actual en Buenos Aires
 const getBuenosAiresDate = (): string => {
@@ -81,6 +82,13 @@ export class User {
     { cascade: true }
   )
   notification: Notification;
+
+  @OneToMany(
+    () => Invoice,
+    invoice => invoice.user,
+    { cascade: true }
+  )
+  invoices: Invoice;
 
   @BeforeInsert()
   checkFieldsBeforeInsert() {

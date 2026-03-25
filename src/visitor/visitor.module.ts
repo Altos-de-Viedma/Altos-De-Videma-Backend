@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
 
 import { VisitorService } from './visitor.service';
 import { VisitorController } from './visitor.controller';
@@ -16,7 +17,8 @@ import { Property } from '../property/entities/property.entity';
   ],
   imports: [
     TypeOrmModule.forFeature( [ Visitor, Property ] ),
-    AuthModule
+    AuthModule,
+    HttpModule
   ]
 } )
 export class VisitorModule { }

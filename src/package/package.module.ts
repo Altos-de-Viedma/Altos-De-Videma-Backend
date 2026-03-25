@@ -1,5 +1,6 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 
 import { PackageService } from './package.service';
 import { PackageController } from './package.controller';
@@ -13,7 +14,8 @@ import { Property } from '../property/entities/property.entity';
   providers: [ PackageService ],
   imports: [
     TypeOrmModule.forFeature( [ Package, User, Property ] ),
-    AuthModule
+    AuthModule,
+    HttpModule
   ]
 } )
 export class PackageModule { }

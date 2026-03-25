@@ -16,6 +16,7 @@ import { PropertyModule } from './property/property.module';
 import { NotificationModule } from './notification/notification.module';
 import { VisitorModule } from './visitor/visitor.module';
 import { PackageModule } from './package/package.module';
+import { InvoiceModule } from './invoice/invoice.module';
 
 
 @Module({
@@ -51,9 +52,10 @@ import { PackageModule } from './package/package.module';
       }),
     }),
 
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'public'),
-    }),
+    // ServeStaticModule.forRoot({
+    //   rootPath: join(__dirname, '..', 'public'),
+    //   exclude: ['/api*', '/auth*', '/emergency*', '/package*', '/visitor*', '/property*', '/notification*'],
+    // }),
 
 
     CommonModule,
@@ -73,6 +75,8 @@ import { PackageModule } from './package/package.module';
     VisitorModule,
 
     PackageModule,
+
+    InvoiceModule,
   ],
 })
 export class AppModule {}

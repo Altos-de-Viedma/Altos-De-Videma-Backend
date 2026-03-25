@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +10,9 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginUserDto, CreateUserDto } from './dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { Emergency } from '../emergency/entities/emergency.entity';
+import { Package } from '../package/entities/package.entity';
+import { Visitor } from '../visitor/entities/visitor.entity';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +20,12 @@ export class AuthService {
   constructor(
     @InjectRepository( User )
     private readonly userRepository: Repository<User>,
+    @InjectRepository( Emergency )
+    private readonly emergencyRepository: Repository<Emergency>,
+    @InjectRepository( Package )
+    private readonly packageRepository: Repository<Package>,
+    @InjectRepository( Visitor )
+    private readonly visitorRepository: Repository<Visitor>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) { }
@@ -244,6 +253,56 @@ export class AuthService {
 
     user.isActive = false;
     return this.userRepository.save( user );
+  }
+
+  async seedDatabase() {
+    try {
+      // Borrar todas las emergencias
+      await this.emergencyRepository.clear();
+
+      // Borrar todos los paquetes
+      await this.packageRepository.clear();
+
+      // Borrar todos los visitantes
+      await this.visitorRepository.clear();
+
+      return {
+        ok: true,
+        message: 'Database seeded successfully',
+        deleted: {
+          emergencies: 'All emergencies deleted',
+          packages: 'All packages deleted',
+          visitors: 'All visitors deleted'
+        }
+      };
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      throw new InternalServerErrorException('Error seeding database');
+    }
+  }
+
+  async getSecurityPhones() {
+    try {
+      const securityUsers = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere(':role = ANY(user.roles)', { role: 'security' })
+        .select(['user.phone'])
+        .getMany();
+
+      if (securityUsers.length === 0) {
+        return [];
+      }
+
+      const phones = securityUsers
+        .filter(user => user.phone) // Solo usuarios con teléfono
+        .map(user => ({ phone: user.phone })); // Objeto con propiedad phone
+
+      return phones;
+    } catch (error) {
+      console.error('Error getting security phones:', error);
+      throw new InternalServerErrorException('Error getting security phones');
+    }
   }
 
   private getJwtToken( payload: JwtPayload ) {

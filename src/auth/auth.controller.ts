@@ -44,6 +44,7 @@ export class AuthController {
   @Get()
   @Auth()
   getAll() {
+    console.log('🔍 GET /auth endpoint called');
     return this.authService.findAllActive();
   }
 
@@ -127,6 +128,22 @@ export class AuthController {
       ok: true,
       user
     };
+  }
+
+  @Post( 'seed' )
+  @Auth( ValidRoles.admin )
+  seedDatabase(
+    @GetUser() user: User
+  ) {
+    return this.authService.seedDatabase();
+  }
+
+  @Get( 'security/phones' )
+  @Auth()
+  getSecurityPhones(
+    @GetUser() user: User
+  ) {
+    return this.authService.getSecurityPhones();
   }
 
 }

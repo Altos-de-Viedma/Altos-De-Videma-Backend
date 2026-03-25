@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 import { CreateEmergencyDto } from './dto/create-emergency.dto';
 import { UpdateEmergencyDto } from './dto/update-emergency.dto';
@@ -18,7 +21,9 @@ const getBuenosAiresDate = (): Date => {
 export class EmergencyService {
   constructor(
     @InjectRepository( Emergency )
-    private readonly emergencyRepository: Repository<Emergency>
+    private readonly emergencyRepository: Repository<Emergency>,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) { }
 
   async create( createEmergencyDto: CreateEmergencyDto, user: User ): Promise<Emergency> {
@@ -32,7 +37,15 @@ export class EmergencyService {
 
   async findAll(): Promise<Emergency[]> {
     return this.handleDatabaseOperation( () =>
-      this.emergencyRepository.find( { where: { status: true } } )
+      this.emergencyRepository.find( {
+        where: {
+          status: true
+        },
+        order: {
+          seen: 'ASC',  // No vistas primero (false = 0, true = 1)
+          date: 'DESC'  // Más recientes primero dentro de cada grupo
+        }
+      } )
     );
   }
 
@@ -59,7 +72,7 @@ export class EmergencyService {
     return this.handleDatabaseOperation( () => this.emergencyRepository.save( updatedEmergency ) );
   }
 
-  async emergencyEnded( id: string, user: User ): Promise<Emergency> {
+  async emergencyEnded( id: string, user: User, authHeader?: string ): Promise<Emergency> {
     const emergency = await this.findOne( id );
 
     if ( !emergency ) {
@@ -72,10 +85,20 @@ export class EmergencyService {
 
     emergency.emergencyEnded = true;
     emergency.seen = true;
-    return this.handleDatabaseOperation( () => this.emergencyRepository.save( emergency ) );
+    const updatedEmergency = await this.handleDatabaseOperation( () => this.emergencyRepository.save( emergency ) );
+
+    // Enviar notificación a N8N después de finalizar la emergencia
+    try {
+      await this.sendEmergencyEndedNotification(emergency, authHeader);
+    } catch (error) {
+      console.error('Error sending emergency ended notification:', error);
+      // No lanzamos el error para no afectar la funcionalidad principal
+    }
+
+    return updatedEmergency;
   }
 
-  async markAsSeen( id: string, user: User ): Promise<Emergency> {
+  async markAsSeen( id: string, user: User, authHeader?: string ): Promise<Emergency> {
     const emergency = await this.findOne( id );
 
     if ( !emergency ) {
@@ -87,7 +110,107 @@ export class EmergencyService {
     }
 
     emergency.seen = true;
-    return this.handleDatabaseOperation( () => this.emergencyRepository.save( emergency ) );
+    const updatedEmergency = await this.handleDatabaseOperation( () => this.emergencyRepository.save( emergency ) );
+
+    // Enviar notificación a N8N después de marcar como vista
+    try {
+      await this.sendEmergencySeenNotification(emergency, authHeader);
+    } catch (error) {
+      console.error('Error sending emergency seen notification:', error);
+      // No lanzamos el error para no afectar la funcionalidad principal
+    }
+
+    return updatedEmergency;
+  }
+
+  private async sendEmergencySeenNotification(emergency: Emergency, authHeader?: string): Promise<void> {
+    try {
+      const n8nUrl = this.configService.get('N8N_URL');
+      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
+      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
+
+      if (!n8nUrl || !evolutionApiUrl || !instanceName || !emergency.user.phone) {
+        console.log('Missing configuration or phone number for emergency notification');
+        return;
+      }
+
+      // Extraer el token del header Authorization
+      const bearerToken = authHeader?.replace('Bearer ', '') || '';
+
+      if (!bearerToken) {
+        console.log('No JWT token available for emergency notification');
+        return;
+      }
+
+      const message = `🚨 *Emergencia Confirmada* 🚨\n\nSeguridad acaba de confirmar que recibió su emergencia:\n\n📋 *Título:* ${emergency.title}\n📝 *Descripción:* ${emergency.description}\n\n✅ Su emergencia está siendo atendida.`;
+
+      const payload = {
+        phoneNumber: emergency.user.phone,
+        serverUrl: evolutionApiUrl,
+        message: message,
+        instanceName: instanceName,
+        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      await firstValueFrom(
+        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+      );
+
+      console.log(`Emergency seen notification sent for emergency ${emergency.id}`);
+    } catch (error) {
+      console.error('Failed to send emergency seen notification:', error);
+      throw error;
+    }
+  }
+
+  private async sendEmergencyEndedNotification(emergency: Emergency, authHeader?: string): Promise<void> {
+    try {
+      const n8nUrl = this.configService.get('N8N_URL');
+      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
+      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
+
+      if (!n8nUrl || !evolutionApiUrl || !instanceName || !emergency.user.phone) {
+        console.log('Missing configuration or phone number for emergency ended notification');
+        return;
+      }
+
+      // Extraer el token del header Authorization
+      const bearerToken = authHeader?.replace('Bearer ', '') || '';
+
+      if (!bearerToken) {
+        console.log('No JWT token available for emergency ended notification');
+        return;
+      }
+
+      const message = `✅ *Emergencia Finalizada* ✅\n\nSeguridad acaba de finalizar o marcar como finalizada la emergencia:\n\n📋 *Título:* ${emergency.title}\n📝 *Descripción:* ${emergency.description}\n\n🔒 Su emergencia fue finalizada.`;
+
+      const payload = {
+        phoneNumber: emergency.user.phone,
+        serverUrl: evolutionApiUrl,
+        message: message,
+        instanceName: instanceName,
+        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      await firstValueFrom(
+        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+      );
+
+      console.log(`Emergency ended notification sent for emergency ${emergency.id}`);
+    } catch (error) {
+      console.error('Failed to send emergency ended notification:', error);
+      throw error;
+    }
   }
 
   async remove( id: string ): Promise<Emergency> {

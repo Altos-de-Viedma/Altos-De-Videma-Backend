@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 
 import { Auth, GetUser } from '../auth/decorators';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
@@ -39,8 +39,8 @@ export class VisitorController {
 
   @Patch( 'visit-completed/:id' )
   @Auth()
-  visitCompleted( @Param( 'id' ) id: string, @GetUser() user: User ) {
-    return this.visitorService.visitCompleted( id, user );
+  visitCompleted( @Param( 'id' ) id: string, @GetUser() user: User, @Headers('authorization') authHeader: string ) {
+    return this.visitorService.visitCompleted( id, user, authHeader );
   }
 
   @Delete( ':id' )

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
@@ -44,8 +44,8 @@ export class PackageController {
 
   @Patch( 'mark-as-received/:id' )
   @Auth()
-  markAsReceived( @Param( 'id' ) id: string, @GetUser() user: User ) {
-    return this.packageService.markAsReceived( id, user );
+  markAsReceived( @Param( 'id' ) id: string, @GetUser() user: User, @Headers('authorization') authHeader: string ) {
+    return this.packageService.markAsReceived( id, user, authHeader );
   }
 
   @Delete( ':id' )

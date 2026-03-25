@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
 
 import { EmergencyService } from './emergency.service';
 import { EmergencyController } from './emergency.controller';
@@ -15,7 +17,9 @@ import { Emergency } from './entities/emergency.entity';
   ],
   imports: [
     TypeOrmModule.forFeature( [ Emergency ] ),
-    AuthModule
+    AuthModule,
+    HttpModule,
+    ConfigModule
   ]
 } )
 export class EmergencyModule { }

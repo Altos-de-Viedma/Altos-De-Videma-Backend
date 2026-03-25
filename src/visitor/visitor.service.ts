@@ -1,6 +1,9 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import { UpdateVisitorDto } from './dto/update-visitor.dto';
@@ -22,7 +25,9 @@ export class VisitorService {
     @InjectRepository( Visitor )
     private readonly visitorRepository: Repository<Visitor>,
     @InjectRepository( Property )
-    private readonly propertyRepository: Repository<Property>
+    private readonly propertyRepository: Repository<Property>,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) { }
 
   async create( createVisitorDto: CreateVisitorDto ): Promise<Visitor> {
@@ -81,7 +86,7 @@ export class VisitorService {
     return this.handleDatabaseOperation( () => this.visitorRepository.save( visitor ) );
   }
 
-  async visitCompleted( id: string, user: User ): Promise<Visitor> {
+  async visitCompleted( id: string, user: User, authHeader?: string ): Promise<Visitor> {
 
     const visitor = await this.findOne( id );
 
@@ -95,7 +100,62 @@ export class VisitorService {
 
     visitor.visitCompleted = true;
 
-    return this.handleDatabaseOperation( () => this.visitorRepository.save( visitor ) );
+    const updatedVisitor = await this.handleDatabaseOperation( () => this.visitorRepository.save( visitor ) );
+
+    // Enviar notificación a N8N después de finalizar la visita
+    try {
+      await this.sendVisitCompletedNotification(visitor, authHeader);
+    } catch (error) {
+      console.error('Error sending visit completed notification:', error);
+      // No lanzamos el error para no afectar la funcionalidad principal
+    }
+
+    return updatedVisitor;
+  }
+
+  private async sendVisitCompletedNotification(visitor: Visitor, authHeader?: string): Promise<void> {
+    try {
+      const n8nUrl = this.configService.get('N8N_URL');
+      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
+      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
+
+      if (!n8nUrl || !evolutionApiUrl || !instanceName || !visitor.property.user.phone) {
+        console.log('Missing configuration or phone number for visit completed notification');
+        return;
+      }
+
+      // Extraer el token del header Authorization
+      const bearerToken = authHeader?.replace('Bearer ', '') || '';
+
+      if (!bearerToken) {
+        console.log('No JWT token available for visit completed notification');
+        return;
+      }
+
+      const message = `👥 *Visita Finalizada* 👥\n\nSeguridad acaba de finalizar la visita registrada:\n\n👤 *Visitante:* ${visitor.fullName}\n📝 *Descripción:* ${visitor.description}\n🏠 *Propiedad:* ${visitor.property.address}\n\n✅ La visita fue finalizada exitosamente.`;
+
+      const payload = {
+        phoneNumber: visitor.property.user.phone,
+        serverUrl: evolutionApiUrl,
+        message: message,
+        instanceName: instanceName,
+        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${bearerToken}`,
+        'Content-Type': 'application/json'
+      };
+
+      await firstValueFrom(
+        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+      );
+
+      console.log(`Visit completed notification sent for visitor ${visitor.id}`);
+    } catch (error) {
+      console.error('Failed to send visit completed notification:', error);
+      throw error;
+    }
   }
 
   private async handleDatabaseOperation<T>( operation: () => Promise<T> ): Promise<T> {
