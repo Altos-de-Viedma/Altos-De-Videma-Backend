@@ -7,7 +7,27 @@
 
 import { createHash, createCipheriv, randomBytes } from 'crypto';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { readlineSync } from './readline-simple';
+
+// Simple readline implementation without external dependencies
+function readlineSync(prompt: string): string {
+  process.stdout.write(prompt);
+
+  const fd = process.stdin.fd;
+  const buffer = Buffer.alloc(1);
+  let input = '';
+
+  while (true) {
+    const bytesRead = require('fs').readSync(fd, buffer, 0, 1, null);
+    if (bytesRead === 0) break;
+
+    const char = buffer.toString();
+    if (char === '\n' || char === '\r') break;
+
+    input += char;
+  }
+
+  return input;
+}
 
 class SecretsSetup {
   private masterKey: string;
@@ -101,27 +121,6 @@ class SecretsSetup {
     console.log('3. Mount secrets as Docker volumes or copy to /run/secrets/');
     console.log('\nSecurity note: Keep the master key separate from the encrypted files!');
   }
-}
-
-// Simple readline implementation without external dependencies
-function readlineSync(prompt: string): string {
-  process.stdout.write(prompt);
-
-  const fd = process.stdin.fd;
-  const buffer = Buffer.alloc(1);
-  let input = '';
-
-  while (true) {
-    const bytesRead = require('fs').readSync(fd, buffer, 0, 1, null);
-    if (bytesRead === 0) break;
-
-    const char = buffer.toString();
-    if (char === '\n' || char === '\r') break;
-
-    input += char;
-  }
-
-  return input;
 }
 
 // Run the setup

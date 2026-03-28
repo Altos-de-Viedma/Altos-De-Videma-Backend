@@ -1,5 +1,5 @@
-# Secure Secrets Management Script
-# No external dependencies - uses only Node.js built-ins
+// Secure Secrets Management Script
+// No external dependencies - uses only Node.js built-ins
 
 import { readFileSync, existsSync } from 'fs';
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'crypto';
