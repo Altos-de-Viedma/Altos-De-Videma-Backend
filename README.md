@@ -5,7 +5,7 @@ Backend para la gestión integral del barrio privado Altos de Videma. Construido
 **Versión:** 1.0.0  
 **Última actualización:** 2025-03-15  
 **Estado:** 🟢 Production Ready
-
+.
 ## Características Principales
 
 - **Autenticación y Autorización:** Sistema de usuarios con roles y protección de rutas mediante JWT.
