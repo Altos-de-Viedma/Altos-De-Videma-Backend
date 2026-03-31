@@ -146,4 +146,12 @@ export class AuthController {
     return this.authService.getSecurityPhones();
   }
 
+  @Get( 'admin/phones' )
+  @Auth( ValidRoles.admin )
+  getAdminPhones(
+    @GetUser() user: User
+  ) {
+    return this.authService.getAdminPhones();
+  }
+
 }

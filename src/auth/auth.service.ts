@@ -33,13 +33,18 @@ export class AuthService {
   async create( createUserDto: CreateUserDto ) {
     try {
       const { password, ...userData } = createUserDto;
-      
+
       // Asegurar que todos los usuarios tengan el rol 'user' por defecto
       const roles = userData.roles || [];
       if ( !roles.includes( 'user' ) ) {
         roles.push( 'user' );
       }
-      
+
+      // Formatear el número de teléfono
+      if (userData.phone) {
+        userData.phone = this.formatPhoneNumber(userData.phone);
+      }
+
       const user = this.userRepository.create( {
         ...userData,
         roles,
@@ -211,6 +216,11 @@ export class AuthService {
       updateUserDto.password = bcrypt.hashSync( updateUserDto.password, 10 );
     }
 
+    // Formatear el número de teléfono si se está actualizando
+    if (updateUserDto.phone) {
+      updateUserDto.phone = this.formatPhoneNumber(updateUserDto.phone);
+    }
+
     const user = await this.userRepository.preload( {
       id: id,
       ...updateUserDto
@@ -303,6 +313,55 @@ export class AuthService {
       console.error('Error getting security phones:', error);
       throw new InternalServerErrorException('Error getting security phones');
     }
+  }
+
+  async getAdminPhones() {
+    try {
+      const adminUsers = await this.userRepository
+        .createQueryBuilder('user')
+        .where('user.isActive = :isActive', { isActive: true })
+        .andWhere(':role = ANY(user.roles)', { role: 'admin' })
+        .select(['user.phone'])
+        .getMany();
+
+      if (adminUsers.length === 0) {
+        return [];
+      }
+
+      const phones = adminUsers
+        .filter(user => user.phone) // Solo usuarios con teléfono
+        .map(user => ({ phone: user.phone }));
+
+      return phones;
+    } catch (error) {
+      console.error('Error getting admin phones:', error);
+      throw new InternalServerErrorException('Error getting admin phones');
+    }
+  }
+
+  private formatPhoneNumber(phone: string): string {
+    if (!phone) return phone;
+
+    // Remover espacios y caracteres especiales
+    let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+
+    // Si ya empieza con 549, no hacer nada
+    if (cleanPhone.startsWith('549')) {
+      return cleanPhone;
+    }
+
+    // Si empieza con +549, remover el +
+    if (cleanPhone.startsWith('+549')) {
+      return cleanPhone.substring(1);
+    }
+
+    // Si empieza con 54, agregar 9
+    if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
+      return '549' + cleanPhone.substring(2);
+    }
+
+    // Si no empieza con 54, agregar 549 al inicio
+    return '549' + cleanPhone;
   }
 
   private getJwtToken( payload: JwtPayload ) {

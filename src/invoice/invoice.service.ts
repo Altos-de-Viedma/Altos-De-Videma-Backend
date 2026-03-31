@@ -117,12 +117,8 @@ export class InvoiceService {
 
   private async sendInvoiceConfirmedNotification(invoice: Invoice, authHeader?: string): Promise<void> {
     try {
-      const n8nUrl = this.configService.get('N8N_URL');
-      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
-      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
-
-      if (!n8nUrl || !evolutionApiUrl || !instanceName || !invoice.user.phone) {
-        console.log('Missing configuration or phone number for invoice confirmed notification');
+      if (!invoice.user.phone) {
+        console.log('No phone number available for invoice confirmed notification');
         return;
       }
 
@@ -134,14 +130,21 @@ export class InvoiceService {
         return;
       }
 
-      const message = `💰 *Factura Confirmada* 💰\n\nSu factura ha sido confirmada:\n\n📋 *Título:* ${invoice.title}\n📝 *Descripción:* ${invoice.description || 'Sin descripción'}\n🔗 *URL:* ${invoice.invoiceUrl}\n\n✅ Su factura fue confirmada exitosamente.`;
+      // Format the date in a readable way
+      const invoiceDate = new Date(invoice.date).toLocaleDateString('es-AR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const message = `🏠 *Altos de Viedma*\n\n✅ Su pago de expensas "${invoice.title}" del ${invoiceDate} ya fue aprobado por la administración.\n\n📋 Puede verificarlo en el sistema cuando guste.\n\n¡Gracias por mantenerse al día con sus pagos!`;
 
       const payload = {
         phoneNumber: invoice.user.phone,
-        serverUrl: evolutionApiUrl,
+        serverUrl: "https://evolution-api.altosdeviedma.com",
         message: message,
-        instanceName: instanceName,
-        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+        instanceName: "AltosDeViedmaProduccion",
+        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
       };
 
       const headers = {
@@ -150,10 +153,10 @@ export class InvoiceService {
       };
 
       await firstValueFrom(
-        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+        this.httpService.post('https://n8n.altosdeviedma.com/webhook/send-message', payload, { headers })
       );
 
-      console.log(`Invoice confirmed notification sent for invoice ${invoice.id}`);
+      console.log(`Invoice confirmed notification sent for invoice ${invoice.id} to ${invoice.user.phone}`);
     } catch (error) {
       console.error('Failed to send invoice confirmed notification:', error);
       throw error;
