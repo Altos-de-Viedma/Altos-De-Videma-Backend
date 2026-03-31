@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUrl, Matches } from 'class-validator';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -9,7 +9,11 @@ export class CreateInvoiceDto {
   @IsOptional()
   description?: string;
 
-  @IsUrl()
+  @IsString()
   @IsNotEmpty()
+  @Matches(
+    /^https?:\/\/.+/,
+    { message: 'La URL debe comenzar con http:// o https://' }
+  )
   invoiceUrl: string;
 }

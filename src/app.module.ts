@@ -45,11 +45,11 @@ import { InvoiceModule } from './invoice/invoice.module';
           autoLoadEntities: true,
           // IMPORTANT: Set to false in production after initial migration
           synchronize: configService.get('STAGE') !== 'prod',
-          ssl: configService.get('STAGE') === 'prod',
+          ssl: true, // Always use SSL for Neon
           extra: {
-            ssl: configService.get('STAGE') === 'prod'
-              ? { rejectUnauthorized: false }
-              : null,
+            ssl: {
+              rejectUnauthorized: false
+            }
           },
           // Connection pool settings for production
           poolSize: 10,
