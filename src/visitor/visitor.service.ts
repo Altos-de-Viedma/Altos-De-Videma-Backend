@@ -133,7 +133,17 @@ export class VisitorService {
         return;
       }
 
-      const message = `👥 *Visita Finalizada* 👥\\n\\n✅ Seguridad acaba de confirmar que finalizó la visita registrada en su propiedad:\\n\\n👤 *Visitante:* ${visitor.fullName}\\n📝 *Descripción:* ${visitor.description}\\n🏠 *Propiedad:* ${visitor.property.address}\\n📅 *Fecha de ingreso:* ${new Date(visitor.date).toLocaleDateString('es-AR')}\\n📅 *Fecha de salida:* ${new Date().toLocaleDateString('es-AR')}\\n\\n🚪 La visita ha sido completada exitosamente. Gracias por utilizar nuestro sistema de registro.`;
+      const message = `👥 *Visita Finalizada* 👥
+
+✅ Seguridad acaba de confirmar que finalizó la visita registrada en su propiedad:
+
+👤 *Visitante:* ${visitor.fullName}
+📝 *Descripción:* ${visitor.description}
+🏠 *Propiedad:* ${visitor.property.address}
+📅 *Fecha de ingreso:* ${new Date(visitor.date).toLocaleDateString('es-AR')}
+📅 *Fecha de salida:* ${new Date().toLocaleDateString('es-AR')}
+
+🚪 La visita ha sido completada exitosamente. Gracias por utilizar nuestro sistema de registro.`;
 
       const payload = {
         phoneNumber: visitor.property.user.phone,

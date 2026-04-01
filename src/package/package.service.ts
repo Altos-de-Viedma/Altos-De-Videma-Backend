@@ -109,7 +109,16 @@ export class PackageService {
         return;
       }
 
-      const message = `📦 *Paquete Recibido* 📦\\n\\n✅ Seguridad acaba de confirmar que recibió su paquete:\\n\\n📋 *Título:* ${packageEntity.title}\\n📝 *Descripción:* ${packageEntity.description}\\n🏠 *Propiedad:* ${packageEntity.property.address}\\n📅 *Fecha de recepción:* ${new Date().toLocaleDateString('es-AR')}\\n\\n¡Su paquete está listo para ser retirado! 🎉`;
+      const message = `📦 *Paquete Recibido* 📦
+
+✅ Seguridad acaba de confirmar que recibió su paquete:
+
+📋 *Título:* ${packageEntity.title}
+📝 *Descripción:* ${packageEntity.description}
+🏠 *Propiedad:* ${packageEntity.property.address}
+📅 *Fecha de recepción:* ${new Date().toLocaleDateString('es-AR')}
+
+¡Su paquete está listo para ser retirado! 🎉`;
 
       const payload = {
         phoneNumber: packageEntity.user.phone,

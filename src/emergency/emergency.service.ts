@@ -144,7 +144,15 @@ export class EmergencyService {
         return;
       }
 
-      const message = `🚨 *Emergencia Vista por Seguridad* 🚨\\n\\n👀 Seguridad acaba de confirmar que recibió y está atendiendo su emergencia:\\n\\n📋 *Título:* ${emergency.title}\\n📝 *Descripción:* ${emergency.description}\\n📅 *Fecha:* ${new Date(emergency.date).toLocaleDateString('es-AR')}\\n\\n✅ Su emergencia está siendo atendida por el equipo de seguridad. Manténgase tranquilo/a.`;
+      const message = `🚨 *Emergencia Vista por Seguridad* 🚨
+
+👀 Seguridad acaba de confirmar que recibió y está atendiendo su emergencia:
+
+📋 *Título:* ${emergency.title}
+📝 *Descripción:* ${emergency.description}
+📅 *Fecha:* ${new Date(emergency.date).toLocaleDateString('es-AR')}
+
+✅ Su emergencia está siendo atendida por el equipo de seguridad. Manténgase tranquilo/a.`;
 
       const payload = {
         phoneNumber: emergency.user.phone,
@@ -188,7 +196,16 @@ export class EmergencyService {
         return;
       }
 
-      const message = `✅ *Emergencia Finalizada* ✅\\n\\n🔒 Seguridad acaba de marcar como finalizada su emergencia:\\n\\n📋 *Título:* ${emergency.title}\\n📝 *Descripción:* ${emergency.description}\\n📅 *Fecha de inicio:* ${new Date(emergency.date).toLocaleDateString('es-AR')}\\n📅 *Fecha de finalización:* ${new Date().toLocaleDateString('es-AR')}\\n\\n🎉 Su emergencia ha sido resuelta exitosamente. Gracias por confiar en nuestro equipo de seguridad.`;
+      const message = `✅ *Emergencia Finalizada* ✅
+
+🔒 Seguridad acaba de marcar como finalizada su emergencia:
+
+📋 *Título:* ${emergency.title}
+📝 *Descripción:* ${emergency.description}
+📅 *Fecha de inicio:* ${new Date(emergency.date).toLocaleDateString('es-AR')}
+📅 *Fecha de finalización:* ${new Date().toLocaleDateString('es-AR')}
+
+🎉 Su emergencia ha sido resuelta exitosamente. Gracias por confiar en nuestro equipo de seguridad.`;
 
       const payload = {
         phoneNumber: emergency.user.phone,
