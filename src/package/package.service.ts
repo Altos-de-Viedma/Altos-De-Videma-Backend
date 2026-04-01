@@ -95,9 +95,8 @@ export class PackageService {
       const webhookConfig = this.secureConfig.webhookConfig;
       const n8nUrl = webhookConfig.n8nUrl;
       const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
-      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 
-      if (!n8nUrl || !evolutionApiUrl || !instanceName || !packageEntity.user.phone) {
+      if (!n8nUrl || !evolutionApiUrl || !packageEntity.user.phone) {
         console.log('Missing configuration or phone number for package received notification');
         return;
       }
@@ -110,14 +109,14 @@ export class PackageService {
         return;
       }
 
-      const message = `📦 *Paquete Recibido* 📦\n\nSeguridad acaba de marcar que recibió el paquete:\n\n📋 *Título:* ${packageEntity.title}\n📝 *Descripción:* ${packageEntity.description}\n\n✅ Su paquete fue recibido exitosamente.`;
+      const message = `📦 *Paquete Recibido* 📦\\n\\n✅ Seguridad acaba de confirmar que recibió su paquete:\\n\\n📋 *Título:* ${packageEntity.title}\\n📝 *Descripción:* ${packageEntity.description}\\n🏠 *Propiedad:* ${packageEntity.property.address}\\n📅 *Fecha de recepción:* ${new Date().toLocaleDateString('es-AR')}\\n\\n¡Su paquete está listo para ser retirado! 🎉`;
 
       const payload = {
         phoneNumber: packageEntity.user.phone,
-        serverUrl: evolutionApiUrl,
+        serverUrl: "https://evolution-api.altosdeviedma.com",
         message: message,
-        instanceName: instanceName,
-        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+        instanceName: "AltosDeViedmaProduccion",
+        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
       };
 
       const headers = {

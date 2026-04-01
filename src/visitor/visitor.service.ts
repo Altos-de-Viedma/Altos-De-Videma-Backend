@@ -119,10 +119,8 @@ export class VisitorService {
     try {
       const webhookConfig = this.secureConfig.webhookConfig;
       const n8nUrl = webhookConfig.n8nUrl;
-      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
-      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 
-      if (!n8nUrl || !evolutionApiUrl || !instanceName || !visitor.property.user.phone) {
+      if (!n8nUrl || !visitor.property.user.phone) {
         console.log('Missing configuration or phone number for visit completed notification');
         return;
       }
@@ -135,14 +133,14 @@ export class VisitorService {
         return;
       }
 
-      const message = `👥 *Visita Finalizada* 👥\n\nSeguridad acaba de finalizar la visita registrada:\n\n👤 *Visitante:* ${visitor.fullName}\n📝 *Descripción:* ${visitor.description}\n🏠 *Propiedad:* ${visitor.property.address}\n\n✅ La visita fue finalizada exitosamente.`;
+      const message = `👥 *Visita Finalizada* 👥\\n\\n✅ Seguridad acaba de confirmar que finalizó la visita registrada en su propiedad:\\n\\n👤 *Visitante:* ${visitor.fullName}\\n📝 *Descripción:* ${visitor.description}\\n🏠 *Propiedad:* ${visitor.property.address}\\n📅 *Fecha de ingreso:* ${new Date(visitor.date).toLocaleDateString('es-AR')}\\n📅 *Fecha de salida:* ${new Date().toLocaleDateString('es-AR')}\\n\\n🚪 La visita ha sido completada exitosamente. Gracias por utilizar nuestro sistema de registro.`;
 
       const payload = {
         phoneNumber: visitor.property.user.phone,
-        serverUrl: evolutionApiUrl,
+        serverUrl: "https://evolution-api.altosdeviedma.com",
         message: message,
-        instanceName: instanceName,
-        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+        instanceName: "AltosDeViedmaProduccion",
+        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
       };
 
       const headers = {

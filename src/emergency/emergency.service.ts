@@ -130,10 +130,8 @@ export class EmergencyService {
     try {
       const webhookConfig = this.secureConfig.webhookConfig;
       const n8nUrl = webhookConfig.n8nUrl;
-      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
-      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 
-      if (!n8nUrl || !evolutionApiUrl || !instanceName || !emergency.user.phone) {
+      if (!n8nUrl || !emergency.user.phone) {
         console.log('Missing configuration or phone number for emergency notification');
         return;
       }
@@ -146,14 +144,14 @@ export class EmergencyService {
         return;
       }
 
-      const message = `🚨 *Emergencia Confirmada* 🚨\n\nSeguridad acaba de confirmar que recibió su emergencia:\n\n📋 *Título:* ${emergency.title}\n📝 *Descripción:* ${emergency.description}\n\n✅ Su emergencia está siendo atendida.`;
+      const message = `🚨 *Emergencia Vista por Seguridad* 🚨\\n\\n👀 Seguridad acaba de confirmar que recibió y está atendiendo su emergencia:\\n\\n📋 *Título:* ${emergency.title}\\n📝 *Descripción:* ${emergency.description}\\n📅 *Fecha:* ${new Date(emergency.date).toLocaleDateString('es-AR')}\\n\\n✅ Su emergencia está siendo atendida por el equipo de seguridad. Manténgase tranquilo/a.`;
 
       const payload = {
         phoneNumber: emergency.user.phone,
-        serverUrl: evolutionApiUrl,
+        serverUrl: "https://evolution-api.altosdeviedma.com",
         message: message,
-        instanceName: instanceName,
-        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+        instanceName: "AltosDeViedmaProduccion",
+        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
       };
 
       const headers = {
@@ -176,10 +174,8 @@ export class EmergencyService {
     try {
       const webhookConfig = this.secureConfig.webhookConfig;
       const n8nUrl = webhookConfig.n8nUrl;
-      const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
-      const instanceName = this.configService.get('INSTANSE_NAME_EVOLUTION_API');
 
-      if (!n8nUrl || !evolutionApiUrl || !instanceName || !emergency.user.phone) {
+      if (!n8nUrl || !emergency.user.phone) {
         console.log('Missing configuration or phone number for emergency ended notification');
         return;
       }
@@ -192,14 +188,14 @@ export class EmergencyService {
         return;
       }
 
-      const message = `✅ *Emergencia Finalizada* ✅\n\nSeguridad acaba de finalizar o marcar como finalizada la emergencia:\n\n📋 *Título:* ${emergency.title}\n📝 *Descripción:* ${emergency.description}\n\n🔒 Su emergencia fue finalizada.`;
+      const message = `✅ *Emergencia Finalizada* ✅\\n\\n🔒 Seguridad acaba de marcar como finalizada su emergencia:\\n\\n📋 *Título:* ${emergency.title}\\n📝 *Descripción:* ${emergency.description}\\n📅 *Fecha de inicio:* ${new Date(emergency.date).toLocaleDateString('es-AR')}\\n📅 *Fecha de finalización:* ${new Date().toLocaleDateString('es-AR')}\\n\\n🎉 Su emergencia ha sido resuelta exitosamente. Gracias por confiar en nuestro equipo de seguridad.`;
 
       const payload = {
         phoneNumber: emergency.user.phone,
-        serverUrl: evolutionApiUrl,
+        serverUrl: "https://evolution-api.altosdeviedma.com",
         message: message,
-        instanceName: instanceName,
-        apikey: "E71D26840311-4506-9DF9-9EED5CFBD114"
+        instanceName: "AltosDeViedmaProduccion",
+        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
       };
 
       const headers = {
