@@ -149,7 +149,7 @@ export class VisitorService {
       };
 
       await firstValueFrom(
-        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+        this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
       );
 
       console.log(`Visit completed notification sent for visitor ${visitor.id}`);

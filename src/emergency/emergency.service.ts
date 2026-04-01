@@ -160,7 +160,7 @@ export class EmergencyService {
       };
 
       await firstValueFrom(
-        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+        this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
       );
 
       console.log(`Emergency seen notification sent for emergency ${emergency.id}`);
@@ -204,7 +204,7 @@ export class EmergencyService {
       };
 
       await firstValueFrom(
-        this.httpService.post(`${n8nUrl}/webhook/send-message`, payload, { headers })
+        this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
       );
 
       console.log(`Emergency ended notification sent for emergency ${emergency.id}`);
