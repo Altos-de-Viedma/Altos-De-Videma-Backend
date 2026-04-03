@@ -1,4 +1,4 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Property } from '../../property/entities/property.entity';
 import { Notification } from '../../notification/entities/notification.entity';
@@ -55,12 +55,11 @@ export class User {
   @Column( 'text', { array: true, default: [ 'user' ] } )
   roles: string[];
 
-  @OneToMany(
+  @ManyToMany(
     () => Property,
-    property => property.user,
-    { cascade: true }
+    property => property.users
   )
-  property: Property;
+  properties: Property[];
 
   @OneToMany(
     () => Emergency,

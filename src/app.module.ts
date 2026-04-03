@@ -44,13 +44,8 @@ import { InvoiceModule } from './invoice/invoice.module';
           password: dbConfig.password,
           autoLoadEntities: true,
           // IMPORTANT: Set to false in production after initial migration
-          synchronize: configService.get('STAGE') !== 'prod',
-          ssl: true, // Always use SSL for Neon
-          extra: {
-            ssl: {
-              rejectUnauthorized: false
-            }
-          },
+          synchronize: true, // Temporarily enabled to create new tables
+          ssl: false, // SSL disabled for local database
           // Connection pool settings for production
           poolSize: 10,
           idleTimeoutMillis: 30000,

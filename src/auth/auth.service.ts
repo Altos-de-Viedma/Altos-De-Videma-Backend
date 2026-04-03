@@ -134,9 +134,9 @@ export class AuthService {
     const user = await this.userRepository.findOne( {
       where: { phone },
       relations: {
-        property: {
-          visitor: true,
-          package: true,
+        properties: {
+          visitors: true,
+          packages: true,
         },
         emergency: true,
         package: true,
@@ -149,7 +149,7 @@ export class AuthService {
 
     const emergencies = ( user.emergency as unknown as any[] ) || [];
     const packages = ( user.package as unknown as any[] ) || [];
-    const properties = ( user.property as unknown as any[] ) || [];
+    const properties = ( user.properties as unknown as any[] ) || [];
 
     const filteredEmergency = emergencies.filter( e => !e.emergencyEnded );
     const filteredPackage = packages.filter( p => !p.received );

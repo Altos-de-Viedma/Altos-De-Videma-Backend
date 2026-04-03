@@ -63,7 +63,7 @@ export class VisitorService {
           id,
           status: true
         },
-        relations: [ 'property', 'property.user' ]
+        relations: [ 'property', 'property.users' ]
       } )
     );
     if ( !visitor ) {
@@ -96,7 +96,11 @@ export class VisitorService {
       this.handleError( 'NOT_FOUND', `Visitor with ID ${ id } not found.` );
     }
 
-    if ( visitor.property.user.id !== user.id && !user.roles.some( role => [ 'admin', 'security' ].includes( role ) ) ) {
+    // Verificar si el usuario es uno de los propietarios de la propiedad
+    const isOwner = visitor.property.users.some(owner => owner.id === user.id);
+    const isAuthorized = isOwner || user.roles.some( role => [ 'admin', 'security' ].includes( role ) );
+
+    if ( !isAuthorized ) {
       this.handleError( 'FORBIDDEN', 'You are not authorized to mark this visit as completed.' );
     }
 
@@ -108,8 +112,8 @@ export class VisitorService {
     try {
       await this.sendVisitCompletedNotification(visitor, authHeader);
     } catch (error) {
-      console.error('Error sending visit completed notification:', error);
-      // No lanzamos el error para no afectar la funcionalidad principal
+      // Log error but don't throw to avoid affecting main functionality
+      // TODO: Implement proper logging service
     }
 
     return updatedVisitor;
@@ -120,8 +124,8 @@ export class VisitorService {
       const webhookConfig = this.secureConfig.webhookConfig;
       const n8nUrl = webhookConfig.n8nUrl;
 
-      if (!n8nUrl || !visitor.property.user.phone) {
-        console.log('Missing configuration or phone number for visit completed notification');
+      if (!n8nUrl || !visitor.property.users || visitor.property.users.length === 0) {
+        // Missing configuration or property owners for visit completed notification
         return;
       }
 
@@ -129,7 +133,7 @@ export class VisitorService {
       const bearerToken = authHeader?.replace('Bearer ', '') || '';
 
       if (!bearerToken) {
-        console.log('No JWT token available for visit completed notification');
+        // No JWT token available for visit completed notification
         return;
       }
 
@@ -145,26 +149,33 @@ export class VisitorService {
 
 🚪 La visita ha sido completada exitosamente. Gracias por utilizar nuestro sistema de registro.`;
 
-      const payload = {
-        phoneNumber: visitor.property.user.phone,
-        serverUrl: "https://evolution-api.altosdeviedma.com",
-        message: message,
-        instanceName: "AltosDeViedmaProduccion",
-        apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
-      };
-
       const headers = {
         'Authorization': `Bearer ${bearerToken}`,
         'Content-Type': 'application/json'
       };
 
-      await firstValueFrom(
-        this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
-      );
+      // Enviar notificación a todos los propietarios
+      const notificationPromises = visitor.property.users
+        .filter(owner => owner.phone) // Solo a los que tienen teléfono
+        .map(owner => {
+          const payload = {
+            phoneNumber: owner.phone,
+            serverUrl: "https://evolution-api.altosdeviedma.com",
+            message: message,
+            instanceName: "AltosDeViedmaProduccion",
+            apikey: "782A3BE06AAC-47C5-AE61-4985CB15631E"
+          };
 
-      console.log(`Visit completed notification sent for visitor ${visitor.id}`);
+          return firstValueFrom(
+            this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
+          );
+        });
+
+      await Promise.all(notificationPromises);
+
+      // Visit completed notifications sent successfully
     } catch (error) {
-      console.error('Failed to send visit completed notification:', error);
+      // Failed to send visit completed notification
       throw error;
     }
   }

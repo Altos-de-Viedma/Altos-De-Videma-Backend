@@ -5,6 +5,7 @@ import { PropertyService } from './property.service';
 import { PropertyController } from './property.controller';
 import { AuthModule } from '../auth/auth.module';
 import { Property } from './entities/property.entity';
+import { User } from '../auth/entities/user.entity';
 
 @Module( {
   controllers: [
@@ -14,7 +15,7 @@ import { Property } from './entities/property.entity';
     PropertyService
   ],
   imports: [
-    TypeOrmModule.forFeature( [ Property ] ),
+    TypeOrmModule.forFeature( [ Property, User ] ),
     AuthModule
   ]
 } )

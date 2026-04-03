@@ -24,7 +24,7 @@ export class Visitor {
 
   @ManyToOne(
     () => Property,
-    property => property.visitor,
+    property => property.visitors,
     { eager: true }
   )
   property: Property;

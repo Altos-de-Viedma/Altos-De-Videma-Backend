@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -15,28 +15,45 @@ export class PropertyService {
 
   constructor(
     @InjectRepository( Property )
-    private readonly propertyRepository: Repository<Property>
+    private readonly propertyRepository: Repository<Property>,
+    @InjectRepository( User )
+    private readonly userRepository: Repository<User>
   ) { }
 
   async create( createPropertyDto: CreatePropertyDto ): Promise<Property> {
+    // Buscar los usuarios por sus IDs
+    const users = await this.userRepository.findBy({ id: In(createPropertyDto.users) });
+
+    if (users.length !== createPropertyDto.users.length) {
+      this.handleError('BAD_REQUEST', 'Uno o más usuarios no fueron encontrados.');
+    }
+
     if ( createPropertyDto.isMain ) {
-      await this.clearMainProperty( createPropertyDto.user );
+      await this.clearMainPropertyForUsers( createPropertyDto.users );
     }
 
     const property = this.propertyRepository.create( {
-      ...createPropertyDto,
-      user: { id: createPropertyDto.user }
+      address: createPropertyDto.address,
+      description: createPropertyDto.description,
+      isMain: createPropertyDto.isMain || false,
+      users: users
     } );
+
     const savedProperty = await this.handleDatabaseOperation( () => this.propertyRepository.save( property ) );
+
+    // Return the saved property with users relation loaded
     return this.propertyRepository.findOne( {
       where: { id: savedProperty.id },
-      relations: [ 'user' ]
+      relations: [ 'users' ]
     } );
   }
 
   async findAll(): Promise<Property[]> {
     return this.handleDatabaseOperation( () =>
-      this.propertyRepository.find( { where: { status: true }, relations: [ 'user' ] } )
+      this.propertyRepository.find( {
+        where: { status: true },
+        relations: [ 'users' ]
+      } )
     );
   }
 
@@ -48,12 +65,12 @@ export class PropertyService {
           id,
           status: true
         },
-        relations: [ 'user' ]
+        relations: [ 'users' ]
       } )
     );
 
     if ( !property ) {
-      this.handleError( 'NOT_FOUND', `Propery with ID ${ id } not found.` );
+      this.handleError( 'NOT_FOUND', `Property with ID ${ id } not found.` );
     }
 
     return property;
@@ -63,14 +80,32 @@ export class PropertyService {
     const property = await this.findOne( id );
 
     if ( updatePropertyDto.isMain && !property.isMain ) {
-      await this.clearMainProperty( property.user.id );
+      const userIds = updatePropertyDto.users || property.users.map(u => u.id);
+      await this.clearMainPropertyForUsers( userIds );
     }
 
-    const updateProperty = Object.assign( property, updatePropertyDto );
-    const savedProperty = await this.handleDatabaseOperation( () => this.propertyRepository.save( updateProperty ) );
+    // Si se están actualizando los usuarios
+    if (updatePropertyDto.users) {
+      const users = await this.userRepository.findBy({ id: In(updatePropertyDto.users) });
+
+      if (users.length !== updatePropertyDto.users.length) {
+        this.handleError('BAD_REQUEST', 'Uno o más usuarios no fueron encontrados.');
+      }
+
+      property.users = users;
+    }
+
+    // Actualizar otros campos
+    if (updatePropertyDto.address !== undefined) property.address = updatePropertyDto.address;
+    if (updatePropertyDto.description !== undefined) property.description = updatePropertyDto.description;
+    if (updatePropertyDto.isMain !== undefined) property.isMain = updatePropertyDto.isMain;
+
+    const savedProperty = await this.handleDatabaseOperation( () => this.propertyRepository.save( property ) );
+
+    // Return the saved property with users relation loaded
     return this.propertyRepository.findOne( {
       where: { id: savedProperty.id },
-      relations: [ 'user' ]
+      relations: [ 'users' ]
     } );
   }
 
@@ -82,10 +117,12 @@ export class PropertyService {
 
   async findByUser( userId: string ): Promise<Property[]> {
     return this.handleDatabaseOperation( () =>
-      this.propertyRepository.find( {
-        where: { user: { id: userId }, status: true },
-        relations: [ 'user' ]
-      } )
+      this.propertyRepository
+        .createQueryBuilder('property')
+        .leftJoinAndSelect('property.users', 'user')
+        .where('property.status = :status', { status: true })
+        .andWhere('user.id = :userId', { userId })
+        .getMany()
     );
   }
 
@@ -93,22 +130,28 @@ export class PropertyService {
     const property = await this.findOne( id );
 
     const isAdmin = user.roles.includes( ValidRoles.admin );
-    const isOwner = property.user.id === user.id;
+    const isOwner = property.users.some(owner => owner.id === user.id);
 
     if ( !isAdmin && !isOwner ) {
       this.handleError( 'BAD_REQUEST', 'No tienes permisos para establecer esta propiedad como principal.' );
     }
 
-    await this.clearMainProperty( property.user.id );
+    const userIds = property.users.map(u => u.id);
+    await this.clearMainPropertyForUsers( userIds );
     property.isMain = true;
     return this.handleDatabaseOperation( () => this.propertyRepository.save( property ) );
   }
 
-  private async clearMainProperty( userId: string ): Promise<void> {
-    await this.propertyRepository.update(
-      { user: { id: userId }, isMain: true },
-      { isMain: false }
-    );
+  private async clearMainPropertyForUsers( userIds: string[] ): Promise<void> {
+    // Limpiar propiedad principal para todos los usuarios que tienen propiedades con estos usuarios
+    await this.propertyRepository
+      .createQueryBuilder('property')
+      .leftJoin('property.users', 'user')
+      .update()
+      .set({ isMain: false })
+      .where('property.isMain = :isMain', { isMain: true })
+      .andWhere('user.id IN (:...userIds)', { userIds })
+      .execute();
   }
 
   private async handleDatabaseOperation<T>( operation: () => Promise<T> ): Promise<T> {
@@ -116,7 +159,7 @@ export class PropertyService {
       return await operation();
     } catch ( error ) {
       if ( error.code === '23505' ) {
-        this.handleError( 'CONFLICT', 'A client with this information already exists.' );
+        this.handleError( 'CONFLICT', 'A property with this information already exists.' );
       }
       this.handleError( 'INTERNAL_SERVER_ERROR', 'Unable to perform the database operation.' );
     }

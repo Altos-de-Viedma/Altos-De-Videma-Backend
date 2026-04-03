@@ -1,11 +1,12 @@
-import { IsOptional, IsString, IsUUID, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsBoolean, IsArray, ArrayMinSize } from 'class-validator';
 
 
 export class CreatePropertyDto {
 
-  @IsUUID()
-  @IsString()
-  user: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @ArrayMinSize(1, { message: 'La propiedad debe tener al menos un propietario' })
+  users: string[];
 
   @IsString()
   address: string;

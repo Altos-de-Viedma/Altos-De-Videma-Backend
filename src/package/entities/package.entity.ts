@@ -34,7 +34,7 @@ export class Package {
   @Column( 'text', { default: '' } )
   description: string;
 
-  @ManyToOne( () => Property, property => property.package, { eager: true } )
+  @ManyToOne( () => Property, property => property.packages, { eager: true } )
   property: Property;
 
   @BeforeInsert()

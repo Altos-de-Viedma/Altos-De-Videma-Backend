@@ -1,4 +1,4 @@
-import { BeforeInsert, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, Column, Entity, ManyToMany, JoinTable, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { User } from '../../auth/entities/user.entity';
 import { Visitor } from '../../visitor/entities/visitor.entity';
@@ -30,26 +30,30 @@ export class Property {
   @Column( 'text', { default: '' } )
   description: string;
 
-  @ManyToOne(
+  @ManyToMany(
     () => User,
-    user => user.property,
-    { eager: true }
+    user => user.properties
   )
-  user: User;
+  @JoinTable({
+    name: 'property_users',
+    joinColumn: { name: 'property_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
+  })
+  users: User[];
 
   @OneToMany(
     () => Visitor,
     visitor => visitor.property,
     { cascade: true }
   )
-  visitor: Visitor;
+  visitors: Visitor[];
 
   @OneToMany(
     () => Package,
     packageData => packageData.property,
     { cascade: true }
   )
-  package: Package;
+  packages: Package[];
 
   @BeforeInsert()
   setDate() {

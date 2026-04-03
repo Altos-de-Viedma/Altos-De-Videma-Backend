@@ -83,8 +83,8 @@ export class PackageService {
     try {
       await this.sendPackageReceivedNotification(packageToUpdate, authHeader);
     } catch (error) {
-      console.error('Error sending package received notification:', error);
-      // No lanzamos el error para no afectar la funcionalidad principal
+      // Log error but don't throw to avoid affecting main functionality
+      // TODO: Implement proper logging service
     }
 
     return updatedPackage;
@@ -97,7 +97,7 @@ export class PackageService {
       const evolutionApiUrl = this.configService.get('EVOLUTION_API_URL');
 
       if (!n8nUrl || !evolutionApiUrl || !packageEntity.user.phone) {
-        console.log('Missing configuration or phone number for package received notification');
+        // Missing configuration or phone number for package received notification
         return;
       }
 
@@ -105,7 +105,7 @@ export class PackageService {
       const bearerToken = authHeader?.replace('Bearer ', '') || '';
 
       if (!bearerToken) {
-        console.log('No JWT token available for package received notification');
+        // No JWT token available for package received notification
         return;
       }
 
@@ -137,9 +137,9 @@ export class PackageService {
         this.httpService.post(`${n8nUrl}/send-message`, payload, { headers })
       );
 
-      console.log(`Package received notification sent for package ${packageEntity.id}`);
+      // Package received notification sent successfully
     } catch (error) {
-      console.error('Failed to send package received notification:', error);
+      // Failed to send package received notification
       throw error;
     }
   }

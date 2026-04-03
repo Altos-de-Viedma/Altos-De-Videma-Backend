@@ -16,14 +16,6 @@ export class VisitorController {
   @Post()
   @Auth()
   create( @Body() createVisitorDto: CreateVisitorDto ) {
-    // Debug logging to help identify N8N data issues
-    console.log('=== VISITOR CREATION DEBUG ===');
-    console.log('Received data:', JSON.stringify(createVisitorDto, null, 2));
-    console.log('Property field:', createVisitorDto.property);
-    console.log('Property type:', typeof createVisitorDto.property);
-    console.log('Is property a valid UUID?', /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(createVisitorDto.property || ''));
-    console.log('==============================');
-
     return this.visitorService.create( createVisitorDto );
   }
 
