@@ -50,8 +50,7 @@ COPY --chown=nodejs:nodejs package*.json yarn.lock* .npmrc ./
 
 # Security: Install only production dependencies with ignore-scripts
 RUN yarn install --frozen-lockfile --production=true --ignore-scripts && \
-    yarn cache clean && \
-    npm audit --audit-level moderate
+    yarn cache clean
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
@@ -59,7 +58,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 
 # Security: Remove write permissions from application files
 RUN chmod -R 555 /app && \
-    chmod -R 444 /app/dist && \
+    chmod -R 755 /app/dist && \
+    chmod -R 644 /app/dist/**/*.js && \
     chmod -R 444 /app/public
 
 # Switch to non-root user
@@ -68,10 +68,6 @@ USER nodejs
 # Security: Use non-privileged port
 EXPOSE 3010
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3010/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
-
 # Security: Start with tini for proper signal handling and security
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

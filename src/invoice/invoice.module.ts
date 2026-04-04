@@ -7,12 +7,13 @@ import { InvoiceController } from './invoice.controller';
 import { AuthModule } from '../auth/auth.module';
 import { Invoice } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
+import { Property } from '../property/entities/property.entity';
 
 @Module({
   controllers: [InvoiceController],
   providers: [InvoiceService],
   imports: [
-    TypeOrmModule.forFeature([Invoice, User]),
+    TypeOrmModule.forFeature([Invoice, User, Property]),
     AuthModule,
     HttpModule
   ]

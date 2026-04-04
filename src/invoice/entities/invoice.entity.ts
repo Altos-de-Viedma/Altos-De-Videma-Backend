@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { Property } from '../../property/entities/property.entity';
 
 export enum InvoiceState {
   IN_PROGRESS = 'in_progress',
@@ -35,4 +36,7 @@ export class Invoice {
 
   @ManyToOne(() => User, (user) => user.invoices, { eager: true })
   user: User;
+
+  @ManyToOne(() => Property, { eager: true })
+  property: Property;
 }

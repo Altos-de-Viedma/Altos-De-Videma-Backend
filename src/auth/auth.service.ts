@@ -131,8 +131,12 @@ export class AuthService {
   }
 
   async getUserByPhone( phone: string ) {
-    const user = await this.userRepository.findOne( {
-      where: { phone },
+    // Normalizar el número de teléfono antes de buscar
+    const normalizedPhone = this.formatPhoneNumber(phone);
+
+    // Buscar con el número normalizado
+    let user = await this.userRepository.findOne( {
+      where: { phone: normalizedPhone },
       relations: {
         properties: {
           visitors: true,
@@ -143,6 +147,24 @@ export class AuthService {
         notification: true,
       }
     } );
+
+    // Si no se encuentra y el número normalizado empieza con 549,
+    // también buscar sin el prefijo 549
+    if (!user && normalizedPhone.startsWith('549')) {
+      const phoneWithout549 = normalizedPhone.substring(3);
+      user = await this.userRepository.findOne( {
+        where: { phone: phoneWithout549 },
+        relations: {
+          properties: {
+            visitors: true,
+            packages: true,
+          },
+          emergency: true,
+          package: true,
+          notification: true,
+        }
+      } );
+    }
 
     if ( !user )
       throw new NotFoundException( `User with phone ${ phone } not found` );
@@ -168,7 +190,7 @@ export class AuthService {
       visitors.forEach( visitor => {
         // Use DNI as unique identifier if available, otherwise use visitor id
         const uniqueKey = visitor.dni || visitor.id;
-        
+
         const visitorData = {
           id: visitor.id,
           fullName: visitor.fullName,
@@ -184,7 +206,7 @@ export class AuthService {
           status: visitor.status,
           date: visitor.date
         };
-        
+
         if ( !allVisitorsMap.has( uniqueKey ) ) {
           allVisitorsMap.set( uniqueKey, visitorData );
         } else {
@@ -192,7 +214,7 @@ export class AuthService {
           const existingVisitor = allVisitorsMap.get( uniqueKey );
           const existingDate = new Date( existingVisitor.date );
           const newDate = new Date( visitorData.date );
-          
+
           if ( newDate > existingDate ) {
             allVisitorsMap.set( uniqueKey, visitorData );
           }
@@ -342,26 +364,36 @@ export class AuthService {
   private formatPhoneNumber(phone: string): string {
     if (!phone) return phone;
 
+    console.log('🔧 FORMAT DEBUG - Input:', phone);
+
     // Remover espacios y caracteres especiales
     let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    console.log('🔧 FORMAT DEBUG - Clean:', cleanPhone);
 
     // Si ya empieza con 549, no hacer nada
     if (cleanPhone.startsWith('549')) {
+      console.log('🔧 FORMAT DEBUG - Already starts with 549, returning:', cleanPhone);
       return cleanPhone;
     }
 
     // Si empieza con +549, remover el +
     if (cleanPhone.startsWith('+549')) {
-      return cleanPhone.substring(1);
+      const result = cleanPhone.substring(1);
+      console.log('🔧 FORMAT DEBUG - Removed +, returning:', result);
+      return result;
     }
 
     // Si empieza con 54, agregar 9
     if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
-      return '549' + cleanPhone.substring(2);
+      const result = '549' + cleanPhone.substring(2);
+      console.log('🔧 FORMAT DEBUG - Added 9 to 54, returning:', result);
+      return result;
     }
 
     // Si no empieza con 54, agregar 549 al inicio
-    return '549' + cleanPhone;
+    const result = '549' + cleanPhone;
+    console.log('🔧 FORMAT DEBUG - Added 549 prefix, returning:', result);
+    return result;
   }
 
   private getJwtToken( payload: JwtPayload ) {

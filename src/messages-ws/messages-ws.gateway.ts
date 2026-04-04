@@ -6,7 +6,14 @@ import { JwtPayload } from '../auth/interfaces';
 import { NewMessageDto } from './dtos/new-message.dto';
 import { MessagesWsService } from './messages-ws.service';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: true,
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
+})
 export class MessagesWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
   @WebSocketServer() wss: Server;
