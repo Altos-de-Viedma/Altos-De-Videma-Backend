@@ -19,6 +19,7 @@ import { NotificationModule } from './notification/notification.module';
 import { VisitorModule } from './visitor/visitor.module';
 import { PackageModule } from './package/package.module';
 import { InvoiceModule } from './invoice/invoice.module';
+import { DailyCashTransactionsModule } from './daily-cash-transactions/daily-cash-transactions.module';
 
 
 @Module({
@@ -79,6 +80,8 @@ import { InvoiceModule } from './invoice/invoice.module';
     PackageModule,
 
     InvoiceModule,
+
+    DailyCashTransactionsModule,
   ],
 })
 export class AppModule {}
