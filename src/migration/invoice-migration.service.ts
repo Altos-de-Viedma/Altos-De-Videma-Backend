@@ -24,6 +24,13 @@ export class InvoiceMigrationService {
 
     console.log(`📋 Found ${invoices.length} invoices to process`);
 
+    for (const invoice of invoices) {
+      console.log(`\n📄 Processing invoice: ${invoice.id}`);
+      console.log(`   Title: ${invoice.title}`);
+      console.log(`   Current user: ${invoice.user.name} ${invoice.user.lastName} (${invoice.user.id})`);
+      console.log(`   Property: ${invoice.property?.address || 'NO PROPERTY'} (${invoice.property?.id || 'NO ID'})`);
+    }
+
     let fixed = 0;
     let errors = 0;
 
@@ -40,6 +47,15 @@ export class InvoiceMigrationService {
           relations: ['users']
         });
 
+        console.log(`\n🏠 Property ${property.id} (${property.address}):`);
+        console.log(`   Users: ${property.users?.length || 0}`);
+
+        if (property.users && property.users.length > 0) {
+          property.users.forEach((user, index) => {
+            console.log(`   User ${index}: ${user.name} ${user.lastName} (${user.id})`);
+          });
+        }
+
         if (!property || !property.users || property.users.length === 0) {
           console.log(`⚠️  Property ${invoice.property.id} has no users, skipping invoice ${invoice.id}`);
           continue;
@@ -54,12 +70,25 @@ export class InvoiceMigrationService {
           continue;
         }
 
+        console.log(`🔧 FIXING: Invoice ${invoice.id}`);
+        console.log(`   FROM: ${invoice.user.name} ${invoice.user.lastName} (${invoice.user.id})`);
+        console.log(`   TO: ${propertyOwner.name} ${propertyOwner.lastName} (${propertyOwner.id})`);
+
         // Update the invoice to assign it to the property owner
-        await this.invoiceRepository.update(invoice.id, {
+        const result = await this.invoiceRepository.update(invoice.id, {
           user: propertyOwner
         });
 
-        console.log(`🔧 Fixed invoice ${invoice.id}: "${invoice.title}" -> assigned to ${propertyOwner.name} ${propertyOwner.lastName}`);
+        console.log(`   Update result:`, result);
+
+        // Verify the update worked
+        const updatedInvoice = await this.invoiceRepository.findOne({
+          where: { id: invoice.id },
+          relations: ['user']
+        });
+
+        console.log(`   Verification - New user: ${updatedInvoice.user.name} ${updatedInvoice.user.lastName} (${updatedInvoice.user.id})`);
+
         fixed++;
 
       } catch (error) {
