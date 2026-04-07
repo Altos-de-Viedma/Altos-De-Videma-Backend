@@ -20,6 +20,7 @@ import { VisitorModule } from './visitor/visitor.module';
 import { PackageModule } from './package/package.module';
 import { InvoiceModule } from './invoice/invoice.module';
 import { DailyCashTransactionsModule } from './daily-cash-transactions/daily-cash-transactions.module';
+import { MigrationModule } from './migration/migration.module';
 
 
 @Module({
@@ -82,6 +83,8 @@ import { DailyCashTransactionsModule } from './daily-cash-transactions/daily-cas
     InvoiceModule,
 
     DailyCashTransactionsModule,
+
+    MigrationModule,
   ],
 })
 export class AppModule {}
