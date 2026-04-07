@@ -32,10 +32,11 @@ export class InvoiceService {
   async create(createInvoiceDto: CreateInvoiceDto, user: User): Promise<Invoice> {
     const { propertyId, ...invoiceData } = createInvoiceDto;
 
-    // Find the property
+    // Find the property with its users
     const property = await this.handleDatabaseOperation(() =>
       this.propertyRepository.findOne({
-        where: { id: propertyId, status: true }
+        where: { id: propertyId, status: true },
+        relations: ['users']
       })
     );
 
@@ -43,9 +44,16 @@ export class InvoiceService {
       this.handleError('NOT_FOUND', `Property with ID ${propertyId} not found.`);
     }
 
+    // Find the property owner (first user associated with the property)
+    if (!property.users || property.users.length === 0) {
+      this.handleError('NOT_FOUND', `No owner found for property ${propertyId}.`);
+    }
+
+    const propertyOwner = property.users[0]; // Assign to first user of the property
+
     const invoice = this.invoiceRepository.create({
       ...invoiceData,
-      user,
+      user: propertyOwner, // Assign to property owner, not the admin creating it
       property,
       date: getBuenosAiresDate(),
     });
