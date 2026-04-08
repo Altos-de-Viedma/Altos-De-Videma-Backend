@@ -4,11 +4,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateUserDto {
 
   @ApiProperty({
-    description: 'User email address (used as username)',
-    example: 'user@example.com',
+    description: 'Username for login',
+    example: 'mtoloza',
   })
   @IsString()
-  @IsEmail()
+  @MinLength(3)
+  @MaxLength(50)
   username: string;
 
   @ApiProperty({
@@ -60,10 +61,10 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'User address',
     example: 'Av. San Martín 1234',
-    minLength: 5,
+    minLength: 2,
   })
   @IsString()
-  @MinLength(5)
+  @MinLength(2)
   @MaxLength(100)
   address: string;
 

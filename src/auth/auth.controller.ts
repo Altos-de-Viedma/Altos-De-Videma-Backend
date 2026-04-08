@@ -23,7 +23,6 @@ export class AuthController {
   ) { }
 
   @Post( 'register' )
-
   createUser( @Body() createUserDto: CreateUserDto ) {
     return this.authService.create( createUserDto );
   }
@@ -44,7 +43,6 @@ export class AuthController {
   @Get()
   @Auth()
   getAll() {
-    console.log('🔍 GET /auth endpoint called');
     return this.authService.findAllActive();
   }
 

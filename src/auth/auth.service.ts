@@ -364,36 +364,26 @@ export class AuthService {
   private formatPhoneNumber(phone: string): string {
     if (!phone) return phone;
 
-    console.log('🔧 FORMAT DEBUG - Input:', phone);
-
     // Remover espacios y caracteres especiales
     let cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-    console.log('🔧 FORMAT DEBUG - Clean:', cleanPhone);
 
     // Si ya empieza con 549, no hacer nada
     if (cleanPhone.startsWith('549')) {
-      console.log('🔧 FORMAT DEBUG - Already starts with 549, returning:', cleanPhone);
       return cleanPhone;
     }
 
     // Si empieza con +549, remover el +
     if (cleanPhone.startsWith('+549')) {
-      const result = cleanPhone.substring(1);
-      console.log('🔧 FORMAT DEBUG - Removed +, returning:', result);
-      return result;
+      return cleanPhone.substring(1);
     }
 
     // Si empieza con 54, agregar 9
     if (cleanPhone.startsWith('54') && !cleanPhone.startsWith('549')) {
-      const result = '549' + cleanPhone.substring(2);
-      console.log('🔧 FORMAT DEBUG - Added 9 to 54, returning:', result);
-      return result;
+      return '549' + cleanPhone.substring(2);
     }
 
     // Si no empieza con 54, agregar 549 al inicio
-    const result = '549' + cleanPhone;
-    console.log('🔧 FORMAT DEBUG - Added 549 prefix, returning:', result);
-    return result;
+    return '549' + cleanPhone;
   }
 
   private getJwtToken( payload: JwtPayload ) {
