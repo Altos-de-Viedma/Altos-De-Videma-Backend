@@ -10,13 +10,9 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Invoice, InvoiceState } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
+import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 type ErrorType = 'NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'FORBIDDEN';
-
-// Función para obtener fecha actual en Buenos Aires
-const getBuenosAiresDate = (): Date => {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
-};
 
 @Injectable()
 export class InvoiceService {
@@ -55,7 +51,7 @@ export class InvoiceService {
       ...invoiceData,
       user: propertyOwner, // Assign to property owner, not the admin creating it
       property,
-      date: getBuenosAiresDate(),
+      date: BuenosAiresDateUtils.now(),
     });
     return this.handleDatabaseOperation(() => this.invoiceRepository.save(invoice));
   }

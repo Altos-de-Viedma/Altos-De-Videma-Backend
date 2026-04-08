@@ -3,11 +3,7 @@ import { BeforeInsert, Column, Entity, ManyToMany, JoinTable, OneToMany, Primary
 import { User } from '../../auth/entities/user.entity';
 import { Visitor } from '../../visitor/entities/visitor.entity';
 import { Package } from '../../package/entities/package.entity';
-
-// Función para obtener fecha actual en Buenos Aires
-const getBuenosAiresDate = (): Date => {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
-};
+import { BuenosAiresDateUtils } from '../../common/utils/buenos-aires-date.utils';
 
 @Entity()
 export class Property {
@@ -58,6 +54,6 @@ export class Property {
   @BeforeInsert()
   setDate() {
     // Establecer fecha en hora de Buenos Aires
-    this.date = getBuenosAiresDate();
+    this.date = BuenosAiresDateUtils.now();
   }
 }

@@ -13,6 +13,7 @@ import { User } from './entities/user.entity';
 import { Emergency } from '../emergency/entities/emergency.entity';
 import { Package } from '../package/entities/package.entity';
 import { Visitor } from '../visitor/entities/visitor.entity';
+import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 @Injectable()
 export class AuthService {
@@ -86,8 +87,8 @@ export class AuthService {
     if ( !bcrypt.compareSync( password, user.password ) )
       throw new UnauthorizedException( 'Credentials are not valid (password)' );
 
-    const now = DateTime.now().setZone( 'America/Argentina/Buenos_Aires' );
-    user.lastActivity = now.toJSDate();
+    const now = BuenosAiresDateUtils.now();
+    user.lastActivity = now;
     await this.userRepository.save( user );
 
     delete user.password;
@@ -178,15 +179,15 @@ export class AuthService {
 
     const filteredProperty = properties.map( prop => ( {
       ...prop,
-      package: ( prop.package as any[] || [] ).filter( p => !p.received ),
-      visitor: ( prop.visitor as any[] || [] ).filter( v => !v.visitCompleted )
+      packages: ( prop.packages as any[] || [] ).filter( p => !p.received ),
+      visitors: ( prop.visitors as any[] || [] ).filter( v => !v.visitCompleted )
     } ) );
 
     // Get unique visitors by DNI from all properties (past and future visits)
     // Prioritizing the most recent visit for each DNI
     const allVisitorsMap = new Map<string, any>();
     properties.forEach( prop => {
-      const visitors = ( prop.visitor as any[] ) || [];
+      const visitors = ( prop.visitors as any[] ) || [];
       visitors.forEach( visitor => {
         // Use DNI as unique identifier if available, otherwise use visitor id
         const uniqueKey = visitor.dni || visitor.id;

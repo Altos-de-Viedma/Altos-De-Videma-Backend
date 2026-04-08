@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { CreateDailyCashTransactionDto, UpdateDailyCashTransactionDto } from './dto';
 import { DailyCashTransaction, TransactionType } from './entities/daily-cash-transaction.entity';
 import { User } from '../auth/entities/user.entity';
+import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 @Injectable()
 export class DailyCashTransactionsService {
@@ -15,14 +16,10 @@ export class DailyCashTransactionsService {
   ) {}
 
   private getArgentinaDate(): Date {
-    const now = new Date();
-    // Argentina is UTC-3
-    const argentinaOffset = -3 * 60; // minutes
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const argentinaTime = new Date(utc + (argentinaOffset * 60000));
-
-    // Return start of day in Argentina
-    return new Date(argentinaTime.getFullYear(), argentinaTime.getMonth(), argentinaTime.getDate());
+    // Usar la utilidad centralizada para obtener fecha de Buenos Aires
+    const now = BuenosAiresDateUtils.now();
+    // Retornar inicio del día en Buenos Aires
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
   private isToday(date: Date): boolean {
