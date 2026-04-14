@@ -132,43 +132,23 @@ export class AuthService {
   }
 
   async getUserByPhone( phone: string ) {
-    // Normalizar el número de teléfono antes de buscar
-    const normalizedPhone = this.formatPhoneNumber(phone);
+    // Obtener los últimos 8 dígitos del número de teléfono
+    const last8Digits = phone.slice(-8);
 
-    // Buscar con el número normalizado
-    let user = await this.userRepository.findOne( {
-      where: { phone: normalizedPhone },
-      relations: {
-        properties: {
-          visitors: true,
-          packages: true,
-        },
-        emergency: true,
-        package: true,
-        notification: true,
-      }
-    } );
-
-    // Si no se encuentra y el número normalizado empieza con 549,
-    // también buscar sin el prefijo 549
-    if (!user && normalizedPhone.startsWith('549')) {
-      const phoneWithout549 = normalizedPhone.substring(3);
-      user = await this.userRepository.findOne( {
-        where: { phone: phoneWithout549 },
-        relations: {
-          properties: {
-            visitors: true,
-            packages: true,
-          },
-          emergency: true,
-          package: true,
-          notification: true,
-        }
-      } );
-    }
+    // Buscar usuarios cuyo teléfono termine con esos 8 dígitos
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.properties', 'properties')
+      .leftJoinAndSelect('properties.visitors', 'visitors')
+      .leftJoinAndSelect('properties.packages', 'packages')
+      .leftJoinAndSelect('user.emergency', 'emergency')
+      .leftJoinAndSelect('user.package', 'package')
+      .leftJoinAndSelect('user.notification', 'notification')
+      .where('user.phone LIKE :phone', { phone: `%${last8Digits}` })
+      .getOne();
 
     if ( !user )
-      throw new NotFoundException( `User with phone ${ phone } not found` );
+      throw new NotFoundException( `User with phone ending in ${ last8Digits } not found` );
 
     const emergencies = ( user.emergency as unknown as any[] ) || [];
     const packages = ( user.package as unknown as any[] ) || [];
