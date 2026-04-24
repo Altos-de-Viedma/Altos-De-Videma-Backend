@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 
 import { CreateDailyCashTransactionDto, UpdateDailyCashTransactionDto } from './dto';
 import { DailyCashTransaction, TransactionType } from './entities/daily-cash-transaction.entity';
@@ -195,6 +195,28 @@ export class DailyCashTransactionsService {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
     });
+  }
+
+  async getMonthlyTransactions(month: number, year: number) {
+    // Validate input
+    if (!month || !year || month < 1 || month > 12) {
+      throw new BadRequestException('Invalid month or year provided');
+    }
+
+    // Create start and end dates for the month
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0);
+
+    const transactions = await this.transactionRepository.find({
+      where: {
+        transactionDate: Between(startOfMonth, endOfMonth),
+        isActive: true
+      },
+      order: { transactionDate: 'DESC', createdAt: 'DESC' },
+      relations: ['createdBy']
+    });
+
+    return transactions;
   }
 
   async findOne(id: string) {

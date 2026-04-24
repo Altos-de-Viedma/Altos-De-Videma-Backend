@@ -66,6 +66,15 @@ export class DailyCashTransactionsController {
     return this.dailyCashTransactionsService.getMonthlyBalances();
   }
 
+  @Get('monthly')
+  @Auth(ValidRoles.admin, ValidRoles.user)
+  @ApiBearerAuth()
+  getMonthlyTransactions(@Query('month') month: string, @Query('year') year: string) {
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    return this.dailyCashTransactionsService.getMonthlyTransactions(monthNum, yearNum);
+  }
+
   @Get('by-date')
   @Auth(ValidRoles.admin, ValidRoles.user)
   @ApiBearerAuth()
