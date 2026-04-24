@@ -1,6 +1,8 @@
-import { User } from '../../auth/entities/user.entity';
 import { BeforeInsert, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+import { User } from '../../auth/entities/user.entity';
 import { BuenosAiresDateUtils } from '../../common/utils/buenos-aires-date.utils';
+
 
 @Entity()
 export class Emergency {

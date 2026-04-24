@@ -21,6 +21,7 @@ import { PackageModule } from './package/package.module';
 import { InvoiceModule } from './invoice/invoice.module';
 import { DailyCashTransactionsModule } from './daily-cash-transactions/daily-cash-transactions.module';
 import { MigrationModule } from './migration/migration.module';
+import { EmployeeInsuranceModule } from './employee-insurance/employee-insurance.module';
 
 
 @Module({
@@ -85,6 +86,8 @@ import { MigrationModule } from './migration/migration.module';
     DailyCashTransactionsModule,
 
     MigrationModule,
+
+    EmployeeInsuranceModule,
   ],
 })
 export class AppModule {}
