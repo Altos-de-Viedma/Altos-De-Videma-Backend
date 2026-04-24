@@ -2,12 +2,17 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { User } from '../../auth/entities/user.entity';
 import { Property } from '../../property/entities/property.entity';
 
-
 export enum InsuranceStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   PENDING = 'pending',
   EXPIRED = 'expired'
+}
+
+export enum ApprovalStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
 }
 
 @Entity('employee_insurance')
@@ -66,6 +71,23 @@ export class EmployeeInsurance {
 
   @Column('text', { nullable: true })
   notes: string;
+
+  @Column({
+    type: 'enum',
+    enum: ApprovalStatus,
+    default: ApprovalStatus.PENDING
+  })
+  approvalStatus: ApprovalStatus;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'approved_by' })
+  approvedBy: User;
+
+  @Column('timestamp', { nullable: true })
+  approvedAt: Date;
+
+  @Column('text', { nullable: true })
+  rejectionReason: string;
 
   @Column('boolean', { default: true })
   isActive: boolean;

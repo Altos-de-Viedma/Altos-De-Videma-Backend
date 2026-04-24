@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } f
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { EmployeeInsuranceService } from './employee-insurance.service';
-import { CreateEmployeeInsuranceDto, UpdateEmployeeInsuranceDto } from './dto';
+import { CreateEmployeeInsuranceDto, UpdateEmployeeInsuranceDto, ApproveInsuranceDto, RejectInsuranceDto } from './dto';
 import { Auth, GetUser } from '../auth/decorators';
 import { ValidRoles } from '../auth/interfaces';
 import { User } from '../auth/entities/user.entity';
@@ -66,6 +66,15 @@ export class EmployeeInsuranceController {
     return this.employeeInsuranceService.findExpiringSoon(user, daysNumber);
   }
 
+  @Get('deleted')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get deleted insurance records (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Deleted insurance records retrieved successfully' })
+  findDeleted(@GetUser() user: User) {
+    return this.employeeInsuranceService.findDeleted(user);
+  }
+
   @Get(':id')
   @Auth(ValidRoles.admin, ValidRoles.security, ValidRoles.user)
   @ApiBearerAuth()
@@ -74,6 +83,34 @@ export class EmployeeInsuranceController {
   @ApiResponse({ status: 404, description: 'Insurance record not found' })
   findOne(@Param('id') id: string, @GetUser() user: User) {
     return this.employeeInsuranceService.findOne(id, user);
+  }
+
+  @Post(':id/approve')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve an employee insurance record (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Insurance record approved successfully' })
+  @ApiResponse({ status: 404, description: 'Insurance record not found' })
+  approve(
+    @Param('id') id: string,
+    @Body() approveDto: ApproveInsuranceDto,
+    @GetUser() user: User
+  ) {
+    return this.employeeInsuranceService.approve(id, approveDto, user);
+  }
+
+  @Post(':id/reject')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject an employee insurance record (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Insurance record rejected successfully' })
+  @ApiResponse({ status: 404, description: 'Insurance record not found' })
+  reject(
+    @Param('id') id: string,
+    @Body() rejectDto: RejectInsuranceDto,
+    @GetUser() user: User
+  ) {
+    return this.employeeInsuranceService.reject(id, rejectDto, user);
   }
 
   @Patch(':id')
@@ -98,5 +135,15 @@ export class EmployeeInsuranceController {
   @ApiResponse({ status: 404, description: 'Insurance record not found' })
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.employeeInsuranceService.remove(id, user);
+  }
+
+  @Post(':id/restore')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Restore a deleted employee insurance record (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Insurance record restored successfully' })
+  @ApiResponse({ status: 404, description: 'Insurance record not found' })
+  restore(@Param('id') id: string, @GetUser() user: User) {
+    return this.employeeInsuranceService.restore(id, user);
   }
 }

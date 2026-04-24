@@ -2,8 +2,8 @@ import { Injectable, BadRequestException, ForbiddenException, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { CreateEmployeeInsuranceDto, UpdateEmployeeInsuranceDto } from './dto';
-import { EmployeeInsurance, InsuranceStatus } from './entities/employee-insurance.entity';
+import { CreateEmployeeInsuranceDto, UpdateEmployeeInsuranceDto, ApproveInsuranceDto, RejectInsuranceDto } from './dto';
+import { EmployeeInsurance, InsuranceStatus, ApprovalStatus } from './entities/employee-insurance.entity';
 import { User } from '../auth/entities/user.entity';
 import { ValidRoles } from '../auth/interfaces';
 
@@ -20,6 +20,7 @@ export class EmployeeInsuranceService {
       const createData: any = {
         ...createEmployeeInsuranceDto,
         expirationDate: new Date(createEmployeeInsuranceDto.expirationDate),
+        approvalStatus: ApprovalStatus.PENDING,
         createdBy: user,
       };
 
@@ -48,16 +49,28 @@ export class EmployeeInsuranceService {
     const insurances = await this.insuranceRepository.find({
       where: whereCondition,
       order: { createdAt: 'DESC' },
-      relations: ['createdBy', 'updatedBy']
+      relations: ['createdBy', 'updatedBy', 'approvedBy']
     });
 
     return insurances;
   }
 
+  async findDeleted(user: User) {
+    if (!user.roles.includes(ValidRoles.admin)) {
+      throw new ForbiddenException('Solo los administradores pueden ver registros eliminados');
+    }
+
+    return await this.insuranceRepository.find({
+      where: { isActive: false },
+      order: { updatedAt: 'DESC' },
+      relations: ['createdBy', 'updatedBy', 'approvedBy']
+    });
+  }
+
   async findOne(id: string, user: User) {
     const insurance = await this.insuranceRepository.findOne({
       where: { id, isActive: true },
-      relations: ['createdBy', 'updatedBy']
+      relations: ['createdBy', 'updatedBy', 'approvedBy']
     });
 
     if (!insurance) {
@@ -128,6 +141,78 @@ export class EmployeeInsuranceService {
 
     return { message: 'Employee insurance record deleted successfully' };
   }
+
+  async restore(id: string, user: User) {
+    if (!user.roles.includes(ValidRoles.admin)) {
+      throw new ForbiddenException('Only administrators can restore insurance records');
+    }
+
+    const insurance = await this.insuranceRepository.findOne({
+      where: { id, isActive: false }
+    });
+
+    if (!insurance) {
+      throw new NotFoundException('Deleted employee insurance record not found');
+    }
+
+    await this.insuranceRepository.update(id, {
+      isActive: true,
+      updatedBy: user
+    });
+
+    return await this.findOne(id, user);
+  }
+
+  async approve(id: string, approveDto: ApproveInsuranceDto, user: User) {
+    if (!user.roles.includes(ValidRoles.admin)) {
+      throw new ForbiddenException('Solo los administradores pueden aprobar seguros');
+    }
+
+    const insurance = await this.insuranceRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['createdBy']
+    });
+
+    if (!insurance) {
+      throw new NotFoundException('Registro de seguro no encontrado');
+    }
+
+    await this.insuranceRepository.update(id, {
+      approvalStatus: ApprovalStatus.APPROVED,
+      approvedBy: user,
+      approvedAt: new Date(),
+      updatedBy: user,
+      ...(approveDto.notes ? { notes: approveDto.notes } : {})
+    });
+
+    return await this.findOne(id, user);
+  }
+
+  async reject(id: string, rejectDto: RejectInsuranceDto, user: User) {
+    if (!user.roles.includes(ValidRoles.admin)) {
+      throw new ForbiddenException('Solo los administradores pueden rechazar seguros');
+    }
+
+    const insurance = await this.insuranceRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['createdBy']
+    });
+
+    if (!insurance) {
+      throw new NotFoundException('Registro de seguro no encontrado');
+    }
+
+    await this.insuranceRepository.update(id, {
+      approvalStatus: ApprovalStatus.REJECTED,
+      rejectionReason: rejectDto.rejectionReason,
+      approvedBy: user,
+      approvedAt: new Date(),
+      updatedBy: user
+    });
+
+    return await this.findOne(id, user);
+  }
+
 
   async findExpired(user: User) {
     const isAdminOrSecurity = user.roles.includes(ValidRoles.admin) || user.roles.includes(ValidRoles.security);
