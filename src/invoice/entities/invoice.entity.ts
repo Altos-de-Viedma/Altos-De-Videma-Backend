@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, ManyToMany, JoinTable, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
 import { Property } from '../../property/entities/property.entity';
 
@@ -39,4 +39,12 @@ export class Invoice {
 
   @ManyToOne(() => Property, { eager: true })
   property: Property;
+
+  @ManyToMany(() => Property, { eager: true })
+  @JoinTable({
+    name: 'invoice_selected_properties',
+    joinColumn: { name: 'invoice_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'property_id', referencedColumnName: 'id' }
+  })
+  selectedProperties: Property[];
 }

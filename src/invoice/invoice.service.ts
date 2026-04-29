@@ -7,9 +7,12 @@ import { firstValueFrom } from 'rxjs';
 
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { ConfirmInvoiceDto } from './dto/confirm-invoice.dto';
 import { Invoice, InvoiceState } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
+import { DailyCashTransactionsService } from '../daily-cash-transactions/daily-cash-transactions.service';
+import { TransactionType, TransactionCategory } from '../daily-cash-transactions/entities/daily-cash-transaction.entity';
 import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 type ErrorType = 'NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'FORBIDDEN';
@@ -23,6 +26,7 @@ export class InvoiceService {
     private readonly propertyRepository: Repository<Property>,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly dailyCashTransactionsService: DailyCashTransactionsService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, user: User): Promise<Invoice> {
@@ -120,7 +124,7 @@ export class InvoiceService {
     return this.handleDatabaseOperation(() => this.invoiceRepository.save(updatedInvoice));
   }
 
-  async confirmInvoice(id: string, user: User, authHeader?: string): Promise<Invoice> {
+  async confirmInvoice(id: string, confirmInvoiceDto: ConfirmInvoiceDto, user: User): Promise<Invoice> {
     const invoice = await this.findOne(id);
 
     if (!invoice) {
@@ -132,8 +136,40 @@ export class InvoiceService {
       this.handleError('FORBIDDEN', 'You are not authorized to confirm this invoice.');
     }
 
+    // Get selected properties
+    const { amount, propertyIds } = confirmInvoiceDto;
+    let selectedProperties: Property[] = [];
+
+    if (propertyIds && propertyIds.length > 0) {
+      selectedProperties = await this.propertyRepository.findByIds(propertyIds);
+    }
+
+    // Confirm the invoice and save selected properties
     invoice.state = InvoiceState.CONFIRMED;
+    invoice.selectedProperties = selectedProperties;
     const updatedInvoice = await this.handleDatabaseOperation(() => this.invoiceRepository.save(invoice));
+
+    // Get property owner info for description
+    const propertyOwner = invoice.property?.users?.[0];
+    const ownerName = propertyOwner
+      ? `${propertyOwner.name} ${propertyOwner.lastName}`
+      : 'Propietario desconocido';
+
+    // Create description based on selected properties
+    let description = `Expensas de ${ownerName}`;
+    if (selectedProperties.length > 0) {
+      const addresses = selectedProperties.map(p => p.address).join(', ');
+      description = `Expensas de ${addresses} - ${ownerName}`;
+    }
+
+    // Create the cash transaction
+    await this.dailyCashTransactionsService.create({
+      amount,
+      type: TransactionType.ENTRY,
+      category: TransactionCategory.OTHER_INCOME,
+      description,
+      propertyIds
+    }, user);
 
     return updatedInvoice;
   }

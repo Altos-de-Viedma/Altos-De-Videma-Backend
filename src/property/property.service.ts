@@ -119,11 +119,44 @@ export class PropertyService {
     return this.handleDatabaseOperation( () =>
       this.propertyRepository
         .createQueryBuilder('property')
-        .leftJoinAndSelect('property.users', 'user')
+        .innerJoinAndSelect('property.users', 'user')
         .where('property.status = :status', { status: true })
         .andWhere('user.id = :userId', { userId })
+        .orderBy('property.isMain', 'DESC')
+        .addOrderBy('property.address', 'ASC')
         .getMany()
     );
+  }
+
+  async findByOwnerName( ownerName: string ): Promise<Property[]> {
+    return this.handleDatabaseOperation( async () => {
+      const allProperties = await this.propertyRepository.find({
+        where: { status: true },
+        relations: ['users']
+      });
+
+      const filteredProperties = allProperties.filter(property => {
+        if (!property.users || property.users.length === 0) return false;
+
+        return property.users.some(user => {
+          const fullName = `${user.lastName}, ${user.name}`.toLowerCase();
+          const reverseName = `${user.name} ${user.lastName}`.toLowerCase();
+          const searchTerm = ownerName.toLowerCase();
+
+          return fullName.includes(searchTerm) ||
+                 reverseName.includes(searchTerm) ||
+                 user.name.toLowerCase().includes(searchTerm) ||
+                 user.lastName.toLowerCase().includes(searchTerm) ||
+                 (user.username && user.username.toLowerCase().includes(searchTerm));
+        });
+      });
+
+      return filteredProperties.sort((a, b) => {
+        if (a.isMain && !b.isMain) return -1;
+        if (!a.isMain && b.isMain) return 1;
+        return a.address.localeCompare(b.address);
+      });
+    });
   }
 
   async setMainProperty( id: string, user: User ): Promise<Property> {

@@ -3,6 +3,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nes
 import { InvoiceService } from './invoice.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { ConfirmInvoiceDto } from './dto/confirm-invoice.dto';
 import { Auth, GetUser } from '../auth/decorators';
 import { User } from '../auth/entities/user.entity';
 
@@ -42,8 +43,8 @@ export class InvoiceController {
 
   @Patch('confirm/:id')
   @Auth()
-  confirmInvoice(@Param('id') id: string, @GetUser() user: User, @Headers('authorization') authHeader: string) {
-    return this.invoiceService.confirmInvoice(id, user, authHeader);
+  confirmInvoice(@Param('id') id: string, @Body() confirmInvoiceDto: ConfirmInvoiceDto, @GetUser() user: User) {
+    return this.invoiceService.confirmInvoice(id, confirmInvoiceDto, user);
   }
 
   @Delete(':id')

@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DailyCashTransactionsService } from './daily-cash-transactions.service';
 import { DailyCashTransactionsController } from './daily-cash-transactions.controller';
 import { DailyCashTransaction } from './entities/daily-cash-transaction.entity';
+import { Property } from '../property/entities/property.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -14,7 +15,7 @@ import { AuthModule } from '../auth/auth.module';
     DailyCashTransactionsService
   ],
   imports: [
-    TypeOrmModule.forFeature([DailyCashTransaction]),
+    TypeOrmModule.forFeature([DailyCashTransaction, Property]),
     AuthModule
   ],
   exports: [

@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min, IsArray, IsUUID } from 'class-validator';
 import { TransactionType, TransactionCategory } from '../entities/daily-cash-transaction.entity';
 
 export class CreateDailyCashTransactionDto {
@@ -16,4 +16,9 @@ export class CreateDailyCashTransactionDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true, message: 'Cada ID de propiedad debe ser un UUID válido' })
+  propertyIds?: string[];
 }

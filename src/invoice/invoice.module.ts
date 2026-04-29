@@ -5,6 +5,7 @@ import { HttpModule } from '@nestjs/axios';
 import { InvoiceService } from './invoice.service';
 import { InvoiceController } from './invoice.controller';
 import { AuthModule } from '../auth/auth.module';
+import { DailyCashTransactionsModule } from '../daily-cash-transactions/daily-cash-transactions.module';
 import { Invoice } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
@@ -15,7 +16,8 @@ import { Property } from '../property/entities/property.entity';
   imports: [
     TypeOrmModule.forFeature([Invoice, User, Property]),
     AuthModule,
-    HttpModule
+    HttpModule,
+    DailyCashTransactionsModule
   ]
 })
 export class InvoiceModule {}

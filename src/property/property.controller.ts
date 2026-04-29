@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 
 import { Auth, GetUser } from '../auth/decorators';
 import { CreatePropertyDto } from './dto/create-property.dto';
@@ -43,6 +43,12 @@ export class PropertyController {
   @Auth()
   setMainProperty( @Param( 'id' ) id: string, @GetUser() user: User ) {
     return this.propertyService.setMainProperty( id, user );
+  }
+
+  @Get( 'by-owner-name' )
+  @Auth()
+  findByOwnerName( @Query( 'name' ) name: string ) {
+    return this.propertyService.findByOwnerName( name );
   }
 
   @Get( ':id' )

@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { Property } from '../../property/entities/property.entity';
 
 export enum TransactionType {
   ENTRY = 'entry',
@@ -58,6 +59,14 @@ export class DailyCashTransaction {
   @ManyToOne(() => User, { eager: true })
   @JoinColumn({ name: 'created_by' })
   createdBy: User;
+
+  @ManyToMany(() => Property, { eager: true })
+  @JoinTable({
+    name: 'daily_cash_transaction_properties',
+    joinColumn: { name: 'transaction_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'property_id', referencedColumnName: 'id' }
+  })
+  properties: Property[];
 
   @CreateDateColumn()
   createdAt: Date;

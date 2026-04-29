@@ -5,6 +5,7 @@ import { Repository, Between } from 'typeorm';
 import { CreateDailyCashTransactionDto, UpdateDailyCashTransactionDto } from './dto';
 import { DailyCashTransaction, TransactionType } from './entities/daily-cash-transaction.entity';
 import { User } from '../auth/entities/user.entity';
+import { Property } from '../property/entities/property.entity';
 import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 @Injectable()
@@ -13,6 +14,8 @@ export class DailyCashTransactionsService {
   constructor(
     @InjectRepository(DailyCashTransaction)
     private readonly transactionRepository: Repository<DailyCashTransaction>,
+    @InjectRepository(Property)
+    private readonly propertyRepository: Repository<Property>,
   ) {}
 
   private getArgentinaDate(): Date {
@@ -29,12 +32,24 @@ export class DailyCashTransactionsService {
   }
 
   async create(createDailyCashTransactionDto: CreateDailyCashTransactionDto, user: User) {
+    const { propertyIds, ...transactionData } = createDailyCashTransactionDto;
     const today = this.getArgentinaDate();
 
+    // Si se proporcionan IDs de propiedades, buscarlas
+    let properties: Property[] = [];
+    if (propertyIds && propertyIds.length > 0) {
+      properties = await this.propertyRepository.findByIds(propertyIds);
+
+      if (properties.length !== propertyIds.length) {
+        throw new BadRequestException('Una o más propiedades no fueron encontradas');
+      }
+    }
+
     const transaction = this.transactionRepository.create({
-      ...createDailyCashTransactionDto,
+      ...transactionData,
       transactionDate: today,
       createdBy: user,
+      properties,
     });
 
     return await this.transactionRepository.save(transaction);
@@ -44,7 +59,7 @@ export class DailyCashTransactionsService {
     const transactions = await this.transactionRepository.find({
       where: { isActive: true },
       order: { transactionDate: 'DESC', createdAt: 'DESC' },
-      relations: ['createdBy']
+      relations: ['createdBy', 'properties']
     });
 
     return this.groupTransactionsByDate(transactions);
@@ -61,7 +76,7 @@ export class DailyCashTransactionsService {
         isActive: true
       },
       order: { createdAt: 'DESC' },
-      relations: ['createdBy']
+      relations: ['createdBy', 'properties']
     });
 
     return transactions;
@@ -213,7 +228,7 @@ export class DailyCashTransactionsService {
         isActive: true
       },
       order: { transactionDate: 'DESC', createdAt: 'DESC' },
-      relations: ['createdBy']
+      relations: ['createdBy', 'properties']
     });
 
     return transactions;
@@ -222,7 +237,7 @@ export class DailyCashTransactionsService {
   async findOne(id: string) {
     const transaction = await this.transactionRepository.findOne({
       where: { id, isActive: true },
-      relations: ['createdBy']
+      relations: ['createdBy', 'properties']
     });
 
     if (!transaction) {
