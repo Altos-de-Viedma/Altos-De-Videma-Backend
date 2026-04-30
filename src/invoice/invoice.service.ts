@@ -12,6 +12,7 @@ import { Invoice, InvoiceState } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
 import { DailyCashTransactionsService } from '../daily-cash-transactions/daily-cash-transactions.service';
+import { PropertyMonthlyPaymentsService } from '../property-monthly-payments/property-monthly-payments.service';
 import { TransactionType, TransactionCategory } from '../daily-cash-transactions/entities/daily-cash-transaction.entity';
 import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
@@ -27,6 +28,7 @@ export class InvoiceService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly dailyCashTransactionsService: DailyCashTransactionsService,
+    private readonly propertyMonthlyPaymentsService: PropertyMonthlyPaymentsService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, user: User): Promise<Invoice> {
@@ -170,6 +172,16 @@ export class InvoiceService {
       description,
       propertyIds
     }, user);
+
+    // Mark properties as paid for current month in the monthly payments system
+    if (propertyIds && propertyIds.length > 0) {
+      await this.propertyMonthlyPaymentsService.markPropertiesAsPaid(
+        propertyIds,
+        amount,
+        updatedInvoice,
+        user
+      );
+    }
 
     return updatedInvoice;
   }

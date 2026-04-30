@@ -6,6 +6,7 @@ import { InvoiceService } from './invoice.service';
 import { InvoiceController } from './invoice.controller';
 import { AuthModule } from '../auth/auth.module';
 import { DailyCashTransactionsModule } from '../daily-cash-transactions/daily-cash-transactions.module';
+import { PropertyMonthlyPaymentsModule } from '../property-monthly-payments/property-monthly-payments.module';
 import { Invoice } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
@@ -17,7 +18,8 @@ import { Property } from '../property/entities/property.entity';
     TypeOrmModule.forFeature([Invoice, User, Property]),
     AuthModule,
     HttpModule,
-    DailyCashTransactionsModule
+    DailyCashTransactionsModule,
+    PropertyMonthlyPaymentsModule
   ]
 })
 export class InvoiceModule {}

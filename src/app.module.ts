@@ -22,6 +22,7 @@ import { InvoiceModule } from './invoice/invoice.module';
 import { DailyCashTransactionsModule } from './daily-cash-transactions/daily-cash-transactions.module';
 import { MigrationModule } from './migration/migration.module';
 import { EmployeeInsuranceModule } from './employee-insurance/employee-insurance.module';
+import { PropertyMonthlyPaymentsModule } from './property-monthly-payments/property-monthly-payments.module';
 
 
 @Module({
@@ -88,6 +89,8 @@ import { EmployeeInsuranceModule } from './employee-insurance/employee-insurance
     MigrationModule,
 
     EmployeeInsuranceModule,
+
+    PropertyMonthlyPaymentsModule,
   ],
 })
 export class AppModule {}
