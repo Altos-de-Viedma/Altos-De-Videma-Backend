@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -26,14 +27,14 @@ import { ConfigService as SecureConfigService } from '../config/config.service';
     JwtModule.registerAsync({
       imports: [ ConfigModule ],
       inject: [ ConfigService ],
-      useFactory: ( configService: ConfigService ) => {
+      useFactory: ( configService: ConfigService ): JwtModuleOptions => {
         const secureConfig = new SecureConfigService();
         const jwtConfig = secureConfig.jwtConfig;
 
         return {
           secret: jwtConfig.secret,
           signOptions: {
-            expiresIn: jwtConfig.expiresIn
+            expiresIn: jwtConfig.expiresIn as StringValue
           }
         }
       }

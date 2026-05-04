@@ -83,7 +83,7 @@ export class AuthController {
   }
 
   @Get( 'private' )
-  @UseGuards( AuthGuard() )
+  @UseGuards( AuthGuard('jwt') )
   testingPrivateRoute(
     @Req() request: Express.Request,
     @GetUser() user: User,
@@ -105,7 +105,7 @@ export class AuthController {
 
   @Get( 'private2' )
   @RoleProtected( ValidRoles.admin, ValidRoles.admin )
-  @UseGuards( AuthGuard(), UserRoleGuard )
+  @UseGuards( AuthGuard('jwt'), UserRoleGuard )
   privateRoute2(
     @GetUser() user: User
   ) {

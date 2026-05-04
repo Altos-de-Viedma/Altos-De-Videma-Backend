@@ -84,6 +84,12 @@ export class InvoiceService {
         where: {
           id,
           status: true
+        },
+        relations: {
+          property: {
+            users: true
+          },
+          user: true
         }
       })
     );
@@ -151,17 +157,31 @@ export class InvoiceService {
     invoice.selectedProperties = selectedProperties;
     const updatedInvoice = await this.handleDatabaseOperation(() => this.invoiceRepository.save(invoice));
 
-    // Get property owner info for description
-    const propertyOwner = invoice.property?.users?.[0];
-    const ownerName = propertyOwner
-      ? `${propertyOwner.name} ${propertyOwner.lastName}`
-      : 'Propietario desconocido';
+    // Get all properties of the invoice user to find the main property owner
+    const userProperties = await this.propertyRepository.find({
+      where: {
+        users: { id: invoice.user.id }
+      },
+      relations: ['users']
+    });
+
+    // Find the main property to get the correct owner name
+    const mainProperty = userProperties.find(p => p.isMain);
+    let ownerName = 'Propietario desconocido';
+
+    if (mainProperty && mainProperty.users && mainProperty.users.length > 0) {
+      const mainPropertyOwner = mainProperty.users[0];
+      ownerName = `${mainPropertyOwner.name} ${mainPropertyOwner.lastName}`;
+    } else if (invoice.user) {
+      // Fallback to invoice user if no main property found
+      ownerName = `${invoice.user.name} ${invoice.user.lastName}`;
+    }
 
     // Create description based on selected properties
     let description = `Expensas de ${ownerName}`;
     if (selectedProperties.length > 0) {
-      const addresses = selectedProperties.map(p => p.address).join(', ');
-      description = `Expensas de ${addresses} - ${ownerName}`;
+      const propertyNames = selectedProperties.map(p => p.address || p.description || 'Propiedad').join(' - ');
+      description = `Expensas de ${propertyNames} - ${ownerName}`;
     }
 
     // Create the cash transaction
