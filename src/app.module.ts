@@ -54,6 +54,9 @@ import { PropertyMonthlyPaymentsModule } from './property-monthly-payments/prope
           poolSize: 10,
           idleTimeoutMillis: 30000,
           connectionTimeoutMillis: 5000,
+          extra: {
+            options: '-c timezone=America/Argentina/Buenos_Aires'
+          }
         };
       },
     }),
