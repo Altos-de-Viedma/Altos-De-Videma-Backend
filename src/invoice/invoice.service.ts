@@ -271,6 +271,20 @@ export class InvoiceService {
         const ownerName = `${user.name} ${user.lastName}`;
         const description = `Expensas de ${ownerName}`;
 
+        let parsedDate = BuenosAiresDateUtils.now();
+        if (item.date) {
+          const parts = item.date.split('-');
+          if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            let year = parseInt(parts[2], 10);
+            if (year < 100) {
+              year += 2000;
+            }
+            parsedDate = new Date(year, month, day);
+          }
+        }
+
         // Create the invoice as confirmed
         const invoice = this.invoiceRepository.create({
           title: `Expensas de ${ownerName}`,
@@ -279,7 +293,7 @@ export class InvoiceService {
           user: user,
           property: mainProperty,
           selectedProperties: [mainProperty],
-          date: BuenosAiresDateUtils.now(),
+          date: parsedDate,
           state: InvoiceState.CONFIRMED,
         });
         const savedInvoice = await this.invoiceRepository.save(invoice);
@@ -290,7 +304,8 @@ export class InvoiceService {
           type: TransactionType.ENTRY,
           category: TransactionCategory.OTHER_INCOME,
           description: `Expensas de ${mainProperty.address} - ${ownerName}`,
-          propertyIds: [mainProperty.id]
+          propertyIds: [mainProperty.id],
+          transactionDate: parsedDate
         }, adminUser);
 
         // Mark property as paid

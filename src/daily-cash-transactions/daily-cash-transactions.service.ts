@@ -32,8 +32,16 @@ export class DailyCashTransactionsService {
   }
 
   async create(createDailyCashTransactionDto: CreateDailyCashTransactionDto, user: User) {
-    const { propertyIds, ...transactionData } = createDailyCashTransactionDto;
-    const today = this.getArgentinaDate();
+    const { propertyIds, transactionDate, ...transactionData } = createDailyCashTransactionDto;
+    
+    // Parse the date if provided, otherwise use current date in Argentina timezone
+    let dateToUse = this.getArgentinaDate();
+    if (transactionDate) {
+      const parsed = new Date(transactionDate);
+      if (!isNaN(parsed.getTime())) {
+        dateToUse = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+      }
+    }
 
     // Si se proporcionan IDs de propiedades, buscarlas
     let properties: Property[] = [];
@@ -47,7 +55,7 @@ export class DailyCashTransactionsService {
 
     const transaction = this.transactionRepository.create({
       ...transactionData,
-      transactionDate: today,
+      transactionDate: dateToUse,
       createdBy: user,
       properties,
     });

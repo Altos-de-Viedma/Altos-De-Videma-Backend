@@ -169,9 +169,9 @@ export class PropertyMonthlyPaymentsService {
   }
 
   async markPropertiesAsPaid(propertyIds: string[], amount: number, invoice: Invoice, paidBy: User): Promise<void> {
-    const currentDate = BuenosAiresDateUtils.now();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
+    const paymentDate = invoice?.date || BuenosAiresDateUtils.now();
+    const year = paymentDate.getFullYear();
+    const month = paymentDate.getMonth() + 1;
 
     for (const propertyId of propertyIds) {
       // Find or create payment record for current month
@@ -206,7 +206,7 @@ export class PropertyMonthlyPaymentsService {
         payment.amountPaid = Number(payment.amountPaid) + amount;
         payment.invoice = invoice;
         payment.paidBy = paidBy;
-        payment.paymentDate = currentDate;
+        payment.paymentDate = paymentDate;
 
         // Update status based on payment
         this.updatePaymentStatus(payment);

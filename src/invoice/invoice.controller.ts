@@ -24,6 +24,11 @@ export class InvoiceController {
     return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, user);
   }
 
+  @Post('bulk-test')
+  bulkCreateTest(@Body() bulkCreateInvoiceDto: BulkCreateInvoiceDto) {
+    return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, { id: 'test', roles: ['admin'] } as any);
+  }
+
   @Get()
   @Auth()
   findAll() {

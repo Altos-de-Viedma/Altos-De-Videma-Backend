@@ -21,4 +21,7 @@ export class CreateDailyCashTransactionDto {
   @IsArray()
   @IsUUID('4', { each: true, message: 'Cada ID de propiedad debe ser un UUID válido' })
   propertyIds?: string[];
+
+  @IsOptional()
+  transactionDate?: Date | string;
 }
