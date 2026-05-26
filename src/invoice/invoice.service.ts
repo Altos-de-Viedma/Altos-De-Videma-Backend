@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { ConfirmInvoiceDto } from './dto/confirm-invoice.dto';
+import { BulkCreateInvoiceDto } from './dto/bulk-create-invoice.dto';
 import { Invoice, InvoiceState } from './entities/invoice.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
@@ -25,6 +26,8 @@ export class InvoiceService {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(Property)
     private readonly propertyRepository: Repository<Property>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly dailyCashTransactionsService: DailyCashTransactionsService,
@@ -217,6 +220,108 @@ export class InvoiceService {
 
     invoice.status = false;
     return this.handleDatabaseOperation(() => this.invoiceRepository.save(invoice));
+  }
+
+  async bulkCreate(bulkCreateInvoiceDto: BulkCreateInvoiceDto, adminUser: User): Promise<{ results: any[] }> {
+    // Only admin can do bulk create
+    if (!adminUser.roles.includes('admin')) {
+      this.handleError('FORBIDDEN', 'Solo administradores pueden crear facturas masivas.');
+    }
+
+    const results = [];
+
+    for (const item of bulkCreateInvoiceDto.items) {
+      try {
+        // Get last 8 digits of the phone
+        const cleanPhone = item.phone.replace(/[\s\-\(\)]/g, '');
+        const last8Digits = cleanPhone.slice(-8);
+
+        // Find user by phone
+        const user = await this.userRepository
+          .createQueryBuilder('user')
+          .leftJoinAndSelect('user.properties', 'properties')
+          .where('user.phone LIKE :phone', { phone: `%${last8Digits}` })
+          .andWhere('user.isActive = :isActive', { isActive: true })
+          .getOne();
+
+        if (!user) {
+          results.push({
+            phone: item.phone,
+            name: item.name,
+            success: false,
+            error: `No se encontró usuario con teléfono terminado en ${last8Digits}`
+          });
+          continue;
+        }
+
+        // Find main property
+        const mainProperty = user.properties?.find(p => p.isMain && p.status);
+
+        if (!mainProperty) {
+          results.push({
+            phone: item.phone,
+            name: item.name,
+            userName: `${user.name} ${user.lastName}`,
+            success: false,
+            error: `No se encontró propiedad principal para ${user.name} ${user.lastName}`
+          });
+          continue;
+        }
+
+        const ownerName = `${user.name} ${user.lastName}`;
+        const description = `Expensas de ${ownerName}`;
+
+        // Create the invoice as confirmed
+        const invoice = this.invoiceRepository.create({
+          title: `Expensas de ${ownerName}`,
+          description,
+          invoiceUrl: item.invoiceUrl,
+          user: user,
+          property: mainProperty,
+          selectedProperties: [mainProperty],
+          date: BuenosAiresDateUtils.now(),
+          state: InvoiceState.CONFIRMED,
+        });
+        const savedInvoice = await this.invoiceRepository.save(invoice);
+
+        // Create cash transaction
+        await this.dailyCashTransactionsService.create({
+          amount: item.amount,
+          type: TransactionType.ENTRY,
+          category: TransactionCategory.OTHER_INCOME,
+          description: `Expensas de ${mainProperty.address} - ${ownerName}`,
+          propertyIds: [mainProperty.id]
+        }, adminUser);
+
+        // Mark property as paid
+        await this.propertyMonthlyPaymentsService.markPropertiesAsPaid(
+          [mainProperty.id],
+          item.amount,
+          savedInvoice,
+          adminUser
+        );
+
+        results.push({
+          phone: item.phone,
+          name: item.name,
+          userName: ownerName,
+          propertyAddress: mainProperty.address,
+          amount: item.amount,
+          invoiceId: savedInvoice.id,
+          success: true
+        });
+
+      } catch (error) {
+        results.push({
+          phone: item.phone,
+          name: item.name,
+          success: false,
+          error: error.message || 'Error desconocido'
+        });
+      }
+    }
+
+    return { results };
   }
 
   private async handleDatabaseOperation<T>(operation: () => Promise<T>): Promise<T> {

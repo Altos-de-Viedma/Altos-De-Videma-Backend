@@ -4,6 +4,7 @@ import { InvoiceService } from './invoice.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { ConfirmInvoiceDto } from './dto/confirm-invoice.dto';
+import { BulkCreateInvoiceDto } from './dto/bulk-create-invoice.dto';
 import { Auth, GetUser } from '../auth/decorators';
 import { User } from '../auth/entities/user.entity';
 
@@ -15,6 +16,12 @@ export class InvoiceController {
   @Auth()
   create(@Body() createInvoiceDto: CreateInvoiceDto, @GetUser() user: User) {
     return this.invoiceService.create(createInvoiceDto, user);
+  }
+
+  @Post('bulk')
+  @Auth()
+  bulkCreate(@Body() bulkCreateInvoiceDto: BulkCreateInvoiceDto, @GetUser() user: User) {
+    return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, user);
   }
 
   @Get()
