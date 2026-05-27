@@ -123,6 +123,44 @@ export class InvoiceService {
     );
   }
 
+  async findDeleted(): Promise<Invoice[]> {
+    return this.handleDatabaseOperation(() =>
+      this.invoiceRepository.find({
+        where: { status: false },
+        relations: {
+          property: {
+            users: true
+          },
+          user: true
+        },
+        order: {
+          date: 'DESC'
+        }
+      })
+    );
+  }
+
+  async restore(id: string, user: User): Promise<Invoice> {
+    const invoice = await this.handleDatabaseOperation(() =>
+      this.invoiceRepository.findOne({
+        where: { id, status: false },
+        relations: ['user']
+      })
+    );
+
+    if (!invoice) {
+      this.handleError('NOT_FOUND', `Deleted Invoice with ID ${id} not found.`);
+    }
+
+    if (!user.roles.includes('admin')) {
+      this.handleError('FORBIDDEN', 'You are not authorized to restore invoices.');
+    }
+
+    invoice.status = true;
+    return this.handleDatabaseOperation(() => this.invoiceRepository.save(invoice));
+  }
+
+
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto, user: User): Promise<Invoice> {
     const invoice = await this.findOne(id);
 

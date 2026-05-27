@@ -7,6 +7,7 @@ import { ConfirmInvoiceDto } from './dto/confirm-invoice.dto';
 import { BulkCreateInvoiceDto } from './dto/bulk-create-invoice.dto';
 import { Auth, GetUser } from '../auth/decorators';
 import { User } from '../auth/entities/user.entity';
+import { ValidRoles } from '../auth/interfaces';
 
 @Controller('invoice')
 export class InvoiceController {
@@ -39,6 +40,18 @@ export class InvoiceController {
   @Auth()
   findByUser(@GetUser() user: User) {
     return this.invoiceService.findByUser(user.id);
+  }
+
+  @Get('deleted')
+  @Auth(ValidRoles.admin)
+  findDeleted() {
+    return this.invoiceService.findDeleted();
+  }
+
+  @Patch(':id/restore')
+  @Auth(ValidRoles.admin)
+  restore(@Param('id') id: string, @GetUser() user: User) {
+    return this.invoiceService.restore(id, user);
   }
 
   @Get(':id')

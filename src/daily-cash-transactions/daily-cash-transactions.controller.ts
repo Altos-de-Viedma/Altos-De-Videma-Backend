@@ -82,6 +82,20 @@ export class DailyCashTransactionsController {
     return this.dailyCashTransactionsService.findByDate(date);
   }
 
+  @Get('deleted')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  findDeleted() {
+    return this.dailyCashTransactionsService.findDeleted();
+  }
+
+  @Patch(':id/restore')
+  @Auth(ValidRoles.admin)
+  @ApiBearerAuth()
+  restore(@Param('id') id: string, @GetUser() user: User) {
+    return this.dailyCashTransactionsService.restore(id, user);
+  }
+
   @Get(':id')
   @Auth(ValidRoles.admin, ValidRoles.user)
   @ApiBearerAuth()

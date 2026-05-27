@@ -90,6 +90,34 @@ export class DailyCashTransactionsService {
     return transactions;
   }
 
+  async findDeleted() {
+    const transactions = await this.transactionRepository.find({
+      where: { isActive: false },
+      order: { transactionDate: 'DESC', createdAt: 'DESC' },
+      relations: ['createdBy', 'properties']
+    });
+
+    return transactions; // Not grouping by date to keep it simple for a list view
+  }
+
+  async restore(id: string, user: User) {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id, isActive: false },
+      relations: ['createdBy', 'properties']
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transacción borrada no encontrada');
+    }
+
+    if (!user.roles.includes('admin')) {
+      throw new ForbiddenException('Solo los administradores pueden restaurar transacciones');
+    }
+
+    transaction.isActive = true;
+    return await this.transactionRepository.save(transaction);
+  }
+
   async getDailySummary() {
     const transactions = await this.transactionRepository.find({
       where: { isActive: true },
