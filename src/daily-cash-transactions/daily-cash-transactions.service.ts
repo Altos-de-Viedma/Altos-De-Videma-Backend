@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
+import { DateTime } from 'luxon';
 
 import { CreateDailyCashTransactionDto, UpdateDailyCashTransactionDto } from './dto';
 import { DailyCashTransaction, TransactionType } from './entities/daily-cash-transaction.entity';
@@ -26,10 +27,12 @@ export class DailyCashTransactionsService {
   }
 
   private isToday(date: Date | string): boolean {
-    const today = this.getArgentinaDate();
-    const d = new Date(date);
-    const checkDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    return today.getTime() === checkDate.getTime();
+    const todayStr = DateTime.now().setZone('America/Argentina/Buenos_Aires').toISODate();
+    // When date is a string like "2026-05-27", extract just the date part
+    const dateStr = typeof date === 'string' 
+      ? date.substring(0, 10) 
+      : DateTime.fromJSDate(date).setZone('America/Argentina/Buenos_Aires').toISODate();
+    return todayStr === dateStr;
   }
 
   async create(createDailyCashTransactionDto: CreateDailyCashTransactionDto, user: User) {
