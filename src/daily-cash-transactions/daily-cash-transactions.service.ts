@@ -290,9 +290,9 @@ export class DailyCashTransactionsService {
   async update(id: string, updateDailyCashTransactionDto: UpdateDailyCashTransactionDto, user: User) {
     const transaction = await this.findOne(id);
 
-    // Solo se puede editar transacciones del día actual
-    if (!this.isToday(transaction.transactionDate)) {
-      throw new ForbiddenException('Solo se pueden editar transacciones del día actual');
+    // Solo se puede editar transacciones del día actual, a menos que sea admin
+    if (!this.isToday(transaction.transactionDate) && !user.roles.includes('admin')) {
+      throw new ForbiddenException('Solo los administradores pueden editar transacciones de fechas pasadas');
     }
 
     Object.assign(transaction, updateDailyCashTransactionDto);
@@ -302,9 +302,9 @@ export class DailyCashTransactionsService {
   async remove(id: string, user: User) {
     const transaction = await this.findOne(id);
 
-    // Solo se puede eliminar transacciones del día actual
-    if (!this.isToday(transaction.transactionDate)) {
-      throw new ForbiddenException('Solo se pueden eliminar transacciones del día actual');
+    // Solo se puede eliminar transacciones del día actual, a menos que sea admin
+    if (!this.isToday(transaction.transactionDate) && !user.roles.includes('admin')) {
+      throw new ForbiddenException('Solo los administradores pueden eliminar transacciones de fechas pasadas');
     }
 
     transaction.isActive = false;
