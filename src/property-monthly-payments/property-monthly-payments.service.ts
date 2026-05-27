@@ -169,7 +169,7 @@ export class PropertyMonthlyPaymentsService {
   }
 
   async markPropertiesAsPaid(propertyIds: string[], amount: number, invoice: Invoice, paidBy: User): Promise<void> {
-    const paymentDate = invoice?.date || BuenosAiresDateUtils.now();
+    const paymentDate = new Date(invoice?.date || BuenosAiresDateUtils.now());
     const year = paymentDate.getFullYear();
     const month = paymentDate.getMonth() + 1;
 

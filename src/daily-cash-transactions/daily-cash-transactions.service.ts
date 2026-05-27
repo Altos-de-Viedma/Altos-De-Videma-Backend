@@ -25,9 +25,10 @@ export class DailyCashTransactionsService {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
-  private isToday(date: Date): boolean {
+  private isToday(date: Date | string): boolean {
     const today = this.getArgentinaDate();
-    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const d = new Date(date);
+    const checkDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     return today.getTime() === checkDate.getTime();
   }
 
