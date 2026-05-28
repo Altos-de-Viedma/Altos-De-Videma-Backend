@@ -27,6 +27,12 @@ export class PropertyController {
     return this.propertyService.findAll();
   }
 
+  @Get('liquidations')
+  @Auth()
+  getLiquidations() {
+    return this.propertyService.getLiquidations();
+  }
+
   @Get( 'user/:userId' )
   @Auth()
   findByUser( @Param( 'userId' ) userId: string ) {
@@ -59,8 +65,8 @@ export class PropertyController {
 
   @Patch( ':id' )
   @Auth()
-  update( @Param( 'id' ) id: string, @Body() updatePropertyDto: UpdatePropertyDto ) {
-    return this.propertyService.update( id, updatePropertyDto );
+  update( @Param( 'id' ) id: string, @Body() updatePropertyDto: UpdatePropertyDto, @GetUser() user: User ) {
+    return this.propertyService.update( id, updatePropertyDto, user );
   }
 
   @Delete( ':id' )

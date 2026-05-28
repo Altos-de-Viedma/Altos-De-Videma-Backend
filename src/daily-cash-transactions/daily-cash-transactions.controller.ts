@@ -83,14 +83,14 @@ export class DailyCashTransactionsController {
   }
 
   @Get('deleted')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   @ApiBearerAuth()
   findDeleted() {
     return this.dailyCashTransactionsService.findDeleted();
   }
 
   @Patch(':id/restore')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   @ApiBearerAuth()
   restore(@Param('id') id: string, @GetUser() user: User) {
     return this.dailyCashTransactionsService.restore(id, user);
@@ -104,7 +104,7 @@ export class DailyCashTransactionsController {
   }
 
   @Patch(':id')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   @ApiBearerAuth()
   update(
     @Param('id') id: string,
@@ -115,7 +115,7 @@ export class DailyCashTransactionsController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   @ApiBearerAuth()
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.dailyCashTransactionsService.remove(id, user);

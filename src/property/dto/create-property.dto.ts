@@ -18,4 +18,10 @@ export class CreatePropertyDto {
   @IsOptional()
   @IsBoolean()
   isMain?: boolean;
+
+  @IsOptional()
+  monthlyExpenseAmount?: number;
+
+  @IsOptional()
+  accumulatedDebt?: number;
 }

@@ -140,6 +140,27 @@ export class InvoiceService {
     );
   }
 
+  async findPaidByProperty(propertyId: string): Promise<Invoice[]> {
+    return this.handleDatabaseOperation(() =>
+      this.invoiceRepository.find({
+        where: { 
+          property: { id: propertyId },
+          state: InvoiceState.CONFIRMED,
+          status: true
+        },
+        relations: {
+          property: {
+            users: true
+          },
+          user: true
+        },
+        order: {
+          date: 'DESC'
+        }
+      })
+    );
+  }
+
   async restore(id: string, user: User): Promise<Invoice> {
     const invoice = await this.handleDatabaseOperation(() =>
       this.invoiceRepository.findOne({

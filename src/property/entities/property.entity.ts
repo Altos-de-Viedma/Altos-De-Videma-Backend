@@ -26,6 +26,12 @@ export class Property {
   @Column( 'text', { default: '' } )
   description: string;
 
+  @Column( 'decimal', { precision: 15, scale: 2, default: 0 } )
+  monthlyExpenseAmount: number;
+
+  @Column( 'decimal', { precision: 15, scale: 2, default: 0 } )
+  accumulatedDebt: number;
+
   @ManyToMany(
     () => User,
     user => user.properties

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -17,7 +17,8 @@ export class PropertyService {
     @InjectRepository( Property )
     private readonly propertyRepository: Repository<Property>,
     @InjectRepository( User )
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource
   ) { }
 
   async create( createPropertyDto: CreatePropertyDto ): Promise<Property> {
@@ -48,13 +49,41 @@ export class PropertyService {
     } );
   }
 
-  async findAll(): Promise<Property[]> {
-    return this.handleDatabaseOperation( () =>
-      this.propertyRepository.find( {
+  async findAll() {
+    return await this.handleDatabaseOperation(() => 
+      this.propertyRepository.find({
         where: { status: true },
-        relations: [ 'users' ]
-      } )
+        relations: ['users'],
+        order: { address: 'ASC' }
+      })
     );
+  }
+
+  async getLiquidations() {
+    const properties = await this.propertyRepository.find({
+      where: { status: true },
+      order: { address: 'ASC' }
+    });
+
+    // Subquery to get the last confirmed invoice date for each property
+    const liquidations = await Promise.all(
+      properties.map(async (property) => {
+        const lastInvoice = await this.dataSource.getRepository('invoices')
+          .createQueryBuilder('invoice')
+          .where('invoice.propertyId = :propertyId', { propertyId: property.id })
+          .andWhere('invoice.state = :state', { state: 'confirmed' })
+          .andWhere('invoice.status = true')
+          .orderBy('invoice.date', 'DESC')
+          .getOne();
+
+        return {
+          ...property,
+          lastPaymentDate: lastInvoice ? lastInvoice.date : null,
+        };
+      })
+    );
+
+    return liquidations;
   }
 
   async findOne( id: string ): Promise<Property> {
@@ -76,7 +105,7 @@ export class PropertyService {
     return property;
   }
 
-  async update( id: string, updatePropertyDto: UpdatePropertyDto ): Promise<Property> {
+  async update( id: string, updatePropertyDto: UpdatePropertyDto, user?: User ): Promise<Property> {
     const property = await this.findOne( id );
 
     if ( updatePropertyDto.isMain && !property.isMain ) {
@@ -95,10 +124,19 @@ export class PropertyService {
       property.users = users;
     }
 
+    // Checking permissions for financial fields
+    if (updatePropertyDto.monthlyExpenseAmount !== undefined || updatePropertyDto.accumulatedDebt !== undefined) {
+      if (!user || (!user.roles.includes(ValidRoles.admin) && !user.roles.includes(ValidRoles.superadmin))) {
+        this.handleError('BAD_REQUEST', 'No tienes permisos para editar los montos o deudas de la propiedad.');
+      }
+    }
+
     // Actualizar otros campos
     if (updatePropertyDto.address !== undefined) property.address = updatePropertyDto.address;
     if (updatePropertyDto.description !== undefined) property.description = updatePropertyDto.description;
     if (updatePropertyDto.isMain !== undefined) property.isMain = updatePropertyDto.isMain;
+    if (updatePropertyDto.monthlyExpenseAmount !== undefined) property.monthlyExpenseAmount = updatePropertyDto.monthlyExpenseAmount;
+    if (updatePropertyDto.accumulatedDebt !== undefined) property.accumulatedDebt = updatePropertyDto.accumulatedDebt;
 
     const savedProperty = await this.handleDatabaseOperation( () => this.propertyRepository.save( property ) );
 

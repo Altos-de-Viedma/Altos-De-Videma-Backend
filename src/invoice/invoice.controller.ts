@@ -20,14 +20,15 @@ export class InvoiceController {
   }
 
   @Post('bulk')
-  @Auth()
+  @Auth(ValidRoles.superadmin)
   bulkCreate(@Body() bulkCreateInvoiceDto: BulkCreateInvoiceDto, @GetUser() user: User) {
     return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, user);
   }
 
   @Post('bulk-test')
+  @Auth(ValidRoles.superadmin)
   bulkCreateTest(@Body() bulkCreateInvoiceDto: BulkCreateInvoiceDto) {
-    return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, { id: 'test', roles: ['admin'] } as any);
+    return this.invoiceService.bulkCreate(bulkCreateInvoiceDto, { id: 'test', roles: ['superadmin'] } as any);
   }
 
   @Get()
@@ -42,14 +43,20 @@ export class InvoiceController {
     return this.invoiceService.findByUser(user.id);
   }
 
+  @Get('property/:propertyId/paid')
+  @Auth()
+  findPaidByProperty(@Param('propertyId') propertyId: string) {
+    return this.invoiceService.findPaidByProperty(propertyId);
+  }
+
   @Get('deleted')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   findDeleted() {
     return this.invoiceService.findDeleted();
   }
 
   @Patch(':id/restore')
-  @Auth(ValidRoles.admin)
+  @Auth(ValidRoles.superadmin)
   restore(@Param('id') id: string, @GetUser() user: User) {
     return this.invoiceService.restore(id, user);
   }
@@ -61,7 +68,7 @@ export class InvoiceController {
   }
 
   @Patch(':id')
-  @Auth()
+  @Auth(ValidRoles.superadmin)
   update(@Param('id') id: string, @Body() updateInvoiceDto: UpdateInvoiceDto, @GetUser() user: User) {
     return this.invoiceService.update(id, updateInvoiceDto, user);
   }
@@ -73,7 +80,7 @@ export class InvoiceController {
   }
 
   @Delete(':id')
-  @Auth()
+  @Auth(ValidRoles.superadmin)
   remove(@Param('id') id: string, @GetUser() user: User) {
     return this.invoiceService.remove(id, user);
   }
