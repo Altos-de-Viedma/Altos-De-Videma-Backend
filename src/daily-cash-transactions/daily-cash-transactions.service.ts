@@ -239,8 +239,8 @@ export class DailyCashTransactionsService {
       .createQueryBuilder('transaction')
       .select('SUM(CASE WHEN transaction.type = :entry THEN transaction.amount ELSE -transaction.amount END)', 'balance')
       .where('transaction.isActive = :isActive', { isActive: true })
-      .andWhere('EXTRACT(MONTH FROM transaction.transactionDate) = :month', { month: currentMonth })
-      .andWhere('EXTRACT(YEAR FROM transaction.transactionDate) = :year', { year: currentYear })
+      .andWhere('EXTRACT(MONTH FROM transaction."transactionDate") = :month', { month: currentMonth })
+      .andWhere('EXTRACT(YEAR FROM transaction."transactionDate") = :year', { year: currentYear })
       .setParameter('entry', TransactionType.ENTRY)
       .getRawOne();
 
@@ -256,8 +256,8 @@ export class DailyCashTransactionsService {
     // transactionDate is a PostgreSQL 'date' column, so EXTRACT works directly on the stored date values.
     const results = await this.transactionRepository
       .createQueryBuilder('transaction')
-      .select('EXTRACT(YEAR FROM transaction.transactionDate)', 'year')
-      .addSelect('EXTRACT(MONTH FROM transaction.transactionDate)', 'month')
+      .select('EXTRACT(YEAR FROM transaction."transactionDate")', 'year')
+      .addSelect('EXTRACT(MONTH FROM transaction."transactionDate")', 'month')
       .addSelect(
         'SUM(CASE WHEN transaction.type = :entry THEN transaction.amount ELSE -transaction.amount END)',
         'balance'
@@ -265,10 +265,10 @@ export class DailyCashTransactionsService {
       .addSelect('COUNT(*)', 'transactionCount')
       .where('transaction.isActive = :isActive', { isActive: true })
       .setParameter('entry', TransactionType.ENTRY)
-      .groupBy('EXTRACT(YEAR FROM transaction.transactionDate)')
-      .addGroupBy('EXTRACT(MONTH FROM transaction.transactionDate)')
-      .orderBy('EXTRACT(YEAR FROM transaction.transactionDate)', 'DESC')
-      .addOrderBy('EXTRACT(MONTH FROM transaction.transactionDate)', 'DESC')
+      .groupBy('EXTRACT(YEAR FROM transaction."transactionDate")')
+      .addGroupBy('EXTRACT(MONTH FROM transaction."transactionDate")')
+      .orderBy('EXTRACT(YEAR FROM transaction."transactionDate")', 'DESC')
+      .addOrderBy('EXTRACT(MONTH FROM transaction."transactionDate")', 'DESC')
       .getRawMany();
 
     return results.map(row => ({
@@ -291,8 +291,8 @@ export class DailyCashTransactionsService {
       .leftJoinAndSelect('transaction.createdBy', 'createdBy')
       .leftJoinAndSelect('transaction.properties', 'properties')
       .where('transaction.isActive = :isActive', { isActive: true })
-      .andWhere('EXTRACT(MONTH FROM transaction.transactionDate) = :month', { month })
-      .andWhere('EXTRACT(YEAR FROM transaction.transactionDate) = :year', { year })
+      .andWhere('EXTRACT(MONTH FROM transaction."transactionDate") = :month', { month })
+      .andWhere('EXTRACT(YEAR FROM transaction."transactionDate") = :year', { year })
       .orderBy('transaction.transactionDate', 'DESC')
       .addOrderBy('transaction.createdAt', 'DESC')
       .getMany();
