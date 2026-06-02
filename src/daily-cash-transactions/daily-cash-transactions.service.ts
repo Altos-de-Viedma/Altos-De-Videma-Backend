@@ -1,13 +1,12 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 
 import { CreateDailyCashTransactionDto, UpdateDailyCashTransactionDto } from './dto';
 import { DailyCashTransaction, TransactionType } from './entities/daily-cash-transaction.entity';
 import { User } from '../auth/entities/user.entity';
 import { Property } from '../property/entities/property.entity';
-import { BuenosAiresDateUtils } from '../common/utils/buenos-aires-date.utils';
 
 @Injectable()
 export class DailyCashTransactionsService {
@@ -20,10 +19,17 @@ export class DailyCashTransactionsService {
   ) {}
 
   private getArgentinaDate(): Date {
-    // Usar la utilidad centralizada para obtener fecha de Buenos Aires
-    const now = BuenosAiresDateUtils.now();
-    // Retornar inicio del día en Buenos Aires
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Usar Luxon para obtener los componentes de fecha en Buenos Aires
+    const nowBA = DateTime.now().setZone('America/Argentina/Buenos_Aires');
+    // Crear fecha usando los componentes de Buenos Aires como string ISO para evitar problemas de timezone
+    // PostgreSQL date column stores just YYYY-MM-DD, so we create a date that represents that
+    const dateStr = `${nowBA.year}-${String(nowBA.month).padStart(2, '0')}-${String(nowBA.day).padStart(2, '0')}`;
+    return new Date(dateStr + 'T00:00:00');
+  }
+
+  private getArgentinaDateString(): string {
+    const nowBA = DateTime.now().setZone('America/Argentina/Buenos_Aires');
+    return `${nowBA.year}-${String(nowBA.month).padStart(2, '0')}-${String(nowBA.day).padStart(2, '0')}`;
   }
 
   private isToday(date: Date | string): boolean {
@@ -35,15 +41,60 @@ export class DailyCashTransactionsService {
     return todayStr === dateStr;
   }
 
+  /**
+   * Safely extracts year and month from a transactionDate value,
+   * handling both Date objects and strings from PostgreSQL date column.
+   * Avoids timezone-related month shifting by parsing as local date components.
+   */
+  private extractYearMonth(transactionDate: Date | string): { year: number; month: number } {
+    // If it's a string like "2026-06-01" or "2026-06-01T00:00:00.000Z", parse the date part directly
+    const dateStr = typeof transactionDate === 'string'
+      ? transactionDate
+      : transactionDate.toISOString();
+    
+    // Extract YYYY-MM-DD from the string to avoid timezone issues
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return { year: parseInt(match[1], 10), month: parseInt(match[2], 10) };
+    }
+
+    // Fallback: use Luxon for safe parsing
+    const dt = typeof transactionDate === 'string'
+      ? DateTime.fromISO(transactionDate)
+      : DateTime.fromJSDate(transactionDate);
+    return { year: dt.year, month: dt.month };
+  }
+
+  /**
+   * Safely extracts the date string (YYYY-MM-DD) from a transactionDate value.
+   */
+  private extractDateKey(transactionDate: Date | string): string {
+    const dateStr = typeof transactionDate === 'string'
+      ? transactionDate
+      : transactionDate.toISOString();
+    
+    const match = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : dateStr.substring(0, 10);
+  }
+
   async create(createDailyCashTransactionDto: CreateDailyCashTransactionDto, user: User) {
     const { propertyIds, transactionDate, ...transactionData } = createDailyCashTransactionDto;
     
     // Parse the date if provided, otherwise use current date in Argentina timezone
     let dateToUse = this.getArgentinaDate();
     if (transactionDate) {
-      const parsed = new Date(transactionDate);
-      if (!isNaN(parsed.getTime())) {
-        dateToUse = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+      // Parse as local date components to avoid timezone shifting
+      const transactionDateStr = typeof transactionDate === 'string'
+        ? transactionDate
+        : transactionDate.toISOString();
+      const match = transactionDateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        dateToUse = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
+      } else {
+        const parsed = new Date(transactionDate);
+        if (!isNaN(parsed.getTime())) {
+          dateToUse = parsed;
+        }
       }
     }
 
@@ -78,18 +129,15 @@ export class DailyCashTransactionsService {
   }
 
   async findByDate(date: string) {
-    // Parse the date string and create start of day in Argentina timezone
-    const parsedDate = new Date(date);
-    const targetDate = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
-
-    const transactions = await this.transactionRepository.find({
-      where: {
-        transactionDate: targetDate,
-        isActive: true
-      },
-      order: { createdAt: 'DESC' },
-      relations: ['createdBy', 'properties']
-    });
+    // Use raw query to compare date column directly, avoiding timezone issues
+    const transactions = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.createdBy', 'createdBy')
+      .leftJoinAndSelect('transaction.properties', 'properties')
+      .where('transaction.isActive = :isActive', { isActive: true })
+      .andWhere('transaction.transactionDate = :targetDate', { targetDate: date.substring(0, 10) })
+      .orderBy('transaction.createdAt', 'DESC')
+      .getMany();
 
     return transactions;
   }
@@ -144,14 +192,14 @@ export class DailyCashTransactionsService {
   }
 
   async getCurrentDayTotal() {
-    const today = this.getArgentinaDate();
+    // Use date string comparison to avoid timezone issues with Date objects
+    const todayStr = this.getArgentinaDateString();
 
-    const transactions = await this.transactionRepository.find({
-      where: {
-        transactionDate: today,
-        isActive: true
-      }
-    });
+    const transactions = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .where('transaction.isActive = :isActive', { isActive: true })
+      .andWhere('transaction.transactionDate = :today', { today: todayStr })
+      .getMany();
 
     const entries = transactions
       .filter(t => t.type === TransactionType.ENTRY)
@@ -162,7 +210,7 @@ export class DailyCashTransactionsService {
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
     return {
-      date: today,
+      date: todayStr,
       entries,
       exits,
       dayTotal: entries - exits,
@@ -182,74 +230,53 @@ export class DailyCashTransactionsService {
   }
 
   async getMonthlyBalance() {
-    const today = this.getArgentinaDate();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // Use EXTRACT to get month/year directly from the date column, avoiding timezone issues
+    const nowBA = DateTime.now().setZone('America/Argentina/Buenos_Aires');
+    const currentMonth = nowBA.month;
+    const currentYear = nowBA.year;
 
     const result = await this.transactionRepository
       .createQueryBuilder('transaction')
       .select('SUM(CASE WHEN transaction.type = :entry THEN transaction.amount ELSE -transaction.amount END)', 'balance')
       .where('transaction.isActive = :isActive', { isActive: true })
-      .andWhere('transaction.transactionDate >= :startOfMonth', { startOfMonth })
-      .andWhere('transaction.transactionDate <= :endOfMonth', { endOfMonth })
+      .andWhere('EXTRACT(MONTH FROM transaction.transactionDate) = :month', { month: currentMonth })
+      .andWhere('EXTRACT(YEAR FROM transaction.transactionDate) = :year', { year: currentYear })
       .setParameter('entry', TransactionType.ENTRY)
       .getRawOne();
 
     return {
       balance: Number(result.balance) || 0,
-      month: today.getMonth() + 1,
-      year: today.getFullYear()
+      month: currentMonth,
+      year: currentYear
     };
   }
 
   async getMonthlyBalances() {
-    const transactions = await this.transactionRepository.find({
-      where: { isActive: true },
-      order: { transactionDate: 'ASC' }
-    });
+    // Use SQL GROUP BY with EXTRACT to avoid any timezone issues with JavaScript Date parsing.
+    // transactionDate is a PostgreSQL 'date' column, so EXTRACT works directly on the stored date values.
+    const results = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select('EXTRACT(YEAR FROM transaction.transactionDate)', 'year')
+      .addSelect('EXTRACT(MONTH FROM transaction.transactionDate)', 'month')
+      .addSelect(
+        'SUM(CASE WHEN transaction.type = :entry THEN transaction.amount ELSE -transaction.amount END)',
+        'balance'
+      )
+      .addSelect('COUNT(*)', 'transactionCount')
+      .where('transaction.isActive = :isActive', { isActive: true })
+      .setParameter('entry', TransactionType.ENTRY)
+      .groupBy('EXTRACT(YEAR FROM transaction.transactionDate)')
+      .addGroupBy('EXTRACT(MONTH FROM transaction.transactionDate)')
+      .orderBy('EXTRACT(YEAR FROM transaction.transactionDate)', 'DESC')
+      .addOrderBy('EXTRACT(MONTH FROM transaction.transactionDate)', 'DESC')
+      .getRawMany();
 
-    if (transactions.length === 0) {
-      return [];
-    }
-
-    // Group transactions by month/year
-    const monthlyGroups = transactions.reduce((acc, transaction) => {
-      const date = new Date(transaction.transactionDate);
-      const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          year: date.getFullYear(),
-          month: date.getMonth() + 1,
-          transactions: []
-        };
-      }
-
-      acc[monthKey].transactions.push(transaction);
-      return acc;
-    }, {} as Record<string, { year: number; month: number; transactions: any[] }>);
-
-    // Calculate balance for each month
-    const monthlyBalances = Object.values(monthlyGroups).map(group => {
-      const balance = group.transactions.reduce((sum, transaction) => {
-        return transaction.type === TransactionType.ENTRY
-          ? sum + Number(transaction.amount)
-          : sum - Number(transaction.amount);
-      }, 0);
-
-      return {
-        year: group.year,
-        month: group.month,
-        balance,
-        transactionCount: group.transactions.length
-      };
-    });
-
-    // Sort by year and month (most recent first)
-    return monthlyBalances.sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year;
-      return b.month - a.month;
-    });
+    return results.map(row => ({
+      year: Number(row.year),
+      month: Number(row.month),
+      balance: Number(row.balance) || 0,
+      transactionCount: Number(row.transactionCount) || 0
+    }));
   }
 
   async getMonthlyTransactions(month: number, year: number) {
@@ -258,18 +285,17 @@ export class DailyCashTransactionsService {
       throw new BadRequestException('Invalid month or year provided');
     }
 
-    // Create start and end dates for the month
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
-
-    const transactions = await this.transactionRepository.find({
-      where: {
-        transactionDate: Between(startOfMonth, endOfMonth),
-        isActive: true
-      },
-      order: { transactionDate: 'DESC', createdAt: 'DESC' },
-      relations: ['createdBy', 'properties']
-    });
+    // Use EXTRACT to compare directly on the date column, avoiding timezone issues
+    const transactions = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .leftJoinAndSelect('transaction.createdBy', 'createdBy')
+      .leftJoinAndSelect('transaction.properties', 'properties')
+      .where('transaction.isActive = :isActive', { isActive: true })
+      .andWhere('EXTRACT(MONTH FROM transaction.transactionDate) = :month', { month })
+      .andWhere('EXTRACT(YEAR FROM transaction.transactionDate) = :year', { year })
+      .orderBy('transaction.transactionDate', 'DESC')
+      .addOrderBy('transaction.createdAt', 'DESC')
+      .getMany();
 
     return transactions;
   }
@@ -313,8 +339,8 @@ export class DailyCashTransactionsService {
 
   private groupTransactionsByDate(transactions: DailyCashTransaction[]) {
     const grouped = transactions.reduce((acc, transaction) => {
-      const date = new Date(transaction.transactionDate);
-      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      // Use extractDateKey to safely get YYYY-MM-DD without timezone issues
+      const dateKey = this.extractDateKey(transaction.transactionDate);
 
       if (!acc[dateKey]) {
         acc[dateKey] = {
